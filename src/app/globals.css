@@ -1,31 +1,43 @@
 @import "tailwindcss";
+@plugin "@midudev/tailwind-animations";
 
+/* ── GameNook Design Tokens ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --gn-bg:           #07070f;
+  --gn-surface:      #0f0f1c;
+  --gn-card:         #131323;
+  --gn-border:       rgba(255, 255, 255, 0.06);
+  --gn-primary:      #e63946;
+  --gn-primary-dark: #b52d38;
+  --gn-secondary:    #f4a261;
+  --gn-accent:       #a855f7;
+  --gn-blue:         #3b82f6;
+  --gn-gold:         #fbbf24;
+  --gn-text:         #f1f0f8;
+  --gn-muted:        #8b8b9e;
+  --gn-subtle:       #3a3a52;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-gn-bg:           var(--gn-bg);
+  --color-gn-surface:      var(--gn-surface);
+  --color-gn-card:         var(--gn-card);
+  --color-gn-primary:      var(--gn-primary);
+  --color-gn-primary-dark: var(--gn-primary-dark);
+  --color-gn-secondary:    var(--gn-secondary);
+  --color-gn-accent:       var(--gn-accent);
+  --color-gn-blue:         var(--gn-blue);
+  --color-gn-gold:         var(--gn-gold);
+  --color-gn-text:         var(--gn-text);
+  --color-gn-muted:        var(--gn-muted);
+  --color-gn-subtle:       var(--gn-subtle);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--gn-bg);
+  color: var(--gn-text);
+  font-family: var(--font-geist-sans), Arial, sans-serif;
 }
-
-.icon-animate {
-  @apply animate-pulse;
-}
-

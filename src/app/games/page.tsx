@@ -6,126 +6,128 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { PlusIcon, SearchIcon } from 'lucide-react'
 
+// ── Helpers de rating ──────────────────────────────────────────
+function getRatingMeta(rating: number | null) {
+  if (!rating) return null
+  if (rating >= 9)  return { icon: '👑', label: 'Obra Maestra', color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' }
+  if (rating >= 7)  return { icon: '🏆', label: 'Imprescindible', color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' }
+  if (rating >= 5)  return { icon: '⚡', label: 'Recomendado',    color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' }
+  if (rating >= 3)  return { icon: '❤️', label: 'Entretenido',    color: 'text-blue-400 border-blue-500/30 bg-blue-500/10' }
+  return               { icon: '🎮', label: 'Jugable',          color: 'text-gray-400 border-gray-500/30 bg-gray-500/10' }
+}
+
+// ── Data fetch ─────────────────────────────────────────────────
 async function getGames() {
   const games = await prisma.game.findMany({
     include: {
-      reviews: {
-        select: {
-          rating: true,
-        },
-      },
-      _count: {
-        select: {
-          reviews: true,
-        },
-      },
+      reviews: { select: { rating: true } },
+      _count:  { select: { reviews: true } },
     },
-    orderBy: {
-      title: 'asc',
-    },
+    orderBy: { title: 'asc' },
   })
 
-  // Calcular rating promedio para cada juego
   return games.map(game => ({
     ...game,
-    averageRating: game.reviews.length > 0 
-      ? game.reviews.reduce((sum, review) => sum + review.rating, 0) / game.reviews.length
+    averageRating: game.reviews.length > 0
+      ? game.reviews.reduce((sum, r) => sum + r.rating, 0) / game.reviews.length
       : null,
   }))
 }
 
+// ── GameCard ───────────────────────────────────────────────────
 function GameCard({ game }: { game: any }) {
+  const meta = getRatingMeta(game.averageRating)
+
   return (
-    <Link 
+    <Link
       href={`/games/${game.slug}`}
-      className="group bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-200 hover:border-indigo-300"
+      className="group bg-gn-card border border-white/[0.06] rounded-xl overflow-hidden
+                 hover:border-gn-primary/30 hover:-translate-y-1
+                 transition-all duration-200 flex flex-col"
     >
-      <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
+      {/* Imagen */}
+      <div className="aspect-video bg-gn-surface relative overflow-hidden">
         {game.imageUrl ? (
-          <img 
-            src={game.imageUrl} 
+          <img
+            src={game.imageUrl}
             alt={game.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-2 bg-gray-300 rounded-lg flex items-center justify-center">
-                🎮
-              </div>
-              <p className="text-sm">Sin imagen</p>
-            </div>
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-gn-muted">
+            <span className="text-3xl">🎮</span>
+            <span className="text-xs uppercase tracking-widest font-semibold">Sin imagen</span>
           </div>
         )}
+
+        {/* Rating badge flotante */}
+        <div className={`absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1
+                         rounded-md border text-xs font-bold backdrop-blur-sm
+                         bg-gn-bg/80 border-white/10
+                         ${meta ? 'text-gn-text' : 'text-gn-muted'}`}
+             style={{ fontFamily: 'var(--font-display, monospace)' }}>
+          {meta
+            ? <><span>{game.averageRating.toFixed(1)}</span><span>{meta.icon}</span></>
+            : <span>—</span>
+          }
+        </div>
       </div>
-      
-      <div className="p-4">
-        <h3 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
+
+      {/* Cuerpo */}
+      <div className="p-4 flex flex-col flex-1">
+        <h3 className="font-display font-bold text-sm tracking-wide text-gn-text
+                       group-hover:text-gn-primary transition-colors truncate mb-1">
           {game.title}
         </h3>
-        
+
         {game.description && (
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+          <p className="text-gn-muted text-xs leading-relaxed line-clamp-2 mb-3 flex-1">
             {game.description}
           </p>
         )}
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            {game.averageRating ? (
-              <div className="flex items-center">
-                <span className="text-yellow-500">⭐</span>
-                <span className="text-sm font-medium text-gray-700 ml-1">
-                  {game.averageRating.toFixed(1)}
-                </span>
-              </div>
-            ) : (
-              <span className="text-sm text-gray-500">Sin reseñas</span>
-            )}
-          </div>
-          
-          <span className="text-xs text-gray-500">
-            {game._count.reviews} {game._count.reviews === 1 ? 'reseña' : 'reseñas'}
+
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/[0.04]">
+          <span className="text-xs text-gn-muted">
+            {game._count.reviews}{' '}
+            {game._count.reviews === 1 ? 'reseña' : 'reseñas'}
           </span>
-        </div>
-        
-        {game.genre && game.genre.length > 0 && (
-          <div className="mt-3">
-            <div className="flex flex-wrap gap-1">
-              {game.genre.slice(0, 3).map((g: string) => (
-                <span 
+
+          {game.genre?.length > 0 && (
+            <div className="flex gap-1">
+              {game.genre.slice(0, 2).map((g: string) => (
+                <span
                   key={g}
-                  className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full"
+                  className="px-2 py-0.5 bg-gn-primary/8 border border-gn-primary/20
+                             text-red-300 text-[10px] font-semibold uppercase tracking-wide rounded"
                 >
                   {g}
                 </span>
               ))}
-              {game.genre.length > 3 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                  +{game.genre.length - 3}
+              {game.genre.length > 2 && (
+                <span className="px-2 py-0.5 bg-gn-subtle/30 border border-white/[0.06]
+                                 text-gn-muted text-[10px] font-semibold rounded">
+                  +{game.genre.length - 2}
                 </span>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </Link>
   )
 }
 
+// ── Skeleton ───────────────────────────────────────────────────
 function GamesSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-          <div className="aspect-video bg-gray-200 animate-pulse" />
-          <div className="p-4">
-            <div className="h-6 bg-gray-200 rounded animate-pulse mb-2" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse mb-3 w-3/4" />
-            <div className="flex items-center justify-between">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-16" />
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-12" />
-            </div>
+        <div key={i} className="bg-gn-card border border-white/[0.06] rounded-xl overflow-hidden">
+          <div className="aspect-video bg-gn-surface animate-pulse" />
+          <div className="p-4 space-y-2">
+            <div className="h-4 bg-gn-subtle/40 rounded animate-pulse w-3/4" />
+            <div className="h-3 bg-gn-subtle/30 rounded animate-pulse" />
+            <div className="h-3 bg-gn-subtle/30 rounded animate-pulse w-2/3" />
           </div>
         </div>
       ))}
@@ -133,106 +135,127 @@ function GamesSkeleton() {
   )
 }
 
-export default async function GamesPage({
-  searchParams,
-}: {
-  searchParams: { search?: string }
-}) {
-  const session = await getServerSession(authOptions)
-  
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Juegos</h1>
-              <p className="text-gray-600 mt-1">
-                Descubre y reseña tus videojuegos favoritos
-              </p>
-            </div>
-            
-            {session && (
-              <Link
-                href="/games/add"
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                <PlusIcon className="w-5 h-5 mr-2" />
-                Agregar Juego
-              </Link>
-            )}
-          </div>
-          
-          {/* Barra de búsqueda */}
-          <div className="mt-6">
-            <form method="GET" className="relative max-w-md">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                name="search"
-                placeholder="Buscar juegos..."
-                defaultValue={searchParams.search || ''}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </form>
-          </div>
-        </div>
-      </div>
-
-      {/* Contenido principal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Suspense fallback={<GamesSkeleton />}>
-          <GamesGrid searchQuery={searchParams.search} />
-        </Suspense>
-      </div>
-    </div>
-  )
-}
-
+// ── GamesGrid ──────────────────────────────────────────────────
 async function GamesGrid({ searchQuery }: { searchQuery?: string }) {
   let games = await getGames()
-  
-  // Filtrar por búsqueda si existe
+
   if (searchQuery) {
-    games = games.filter(game => 
-      game.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      game.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      game.genre.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()))
+    const q = searchQuery.toLowerCase()
+    games = games.filter(g =>
+      g.title.toLowerCase().includes(q) ||
+      g.description?.toLowerCase().includes(q) ||
+      g.genre.some((gen: string) => gen.toLowerCase().includes(q))
     )
   }
 
   if (games.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-24 h-24 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center text-4xl">
-          🎮
-        </div>
-        <h3 className="text-xl font-medium text-gray-900 mb-2">
-          {searchQuery ? 'No se encontraron juegos' : 'No hay juegos disponibles'}
+      <div className="text-center py-20">
+        <div className="text-6xl mb-4">🎮</div>
+        <h3 className="font-display font-bold text-xl text-gn-text mb-2">
+          {searchQuery ? 'Sin resultados' : 'No hay juegos aún'}
         </h3>
-        <p className="text-gray-600 mb-6">
-          {searchQuery 
-            ? `No encontramos juegos que coincidan con "${searchQuery}"`
-            : 'Sé el primero en agregar un juego a la plataforma'
-          }
+        <p className="text-gn-muted text-sm max-w-xs mx-auto mb-6">
+          {searchQuery
+            ? `No encontramos nada para "${searchQuery}"`
+            : 'Sé el primero en agregar un juego a la plataforma.'}
         </p>
         <Link
           href="/games/add"
-          className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          className="inline-flex items-center gap-2 bg-gn-primary hover:bg-gn-primary-dark
+                     text-white text-sm font-bold uppercase tracking-wider px-6 py-2.5
+                     rounded-lg transition-colors"
         >
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Agregar Juego
+          <PlusIcon className="w-4 h-4" />
+          Agregar juego
         </Link>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {games.map((game) => (
-        <GameCard key={game.id} game={game} />
-      ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      {games.map(game => <GameCard key={game.id} game={game} />)}
+    </div>
+  )
+}
+
+// ── Page ───────────────────────────────────────────────────────
+export default async function GamesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string }>
+}) {
+  const params  = await searchParams          // Next.js 15: searchParams es async
+  const session = await getServerSession(authOptions)
+
+  return (
+    <div className="min-h-screen bg-gn-bg font-body">
+
+      {/* Header */}
+      <div className="max-w-7xl mx-auto px-6 pt-10 pb-6">
+
+        {/* Título + botón */}
+        <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
+          <div>
+            <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">
+              // Biblioteca
+            </p>
+            <h1 className="font-display font-black text-4xl md:text-5xl text-gn-text leading-tight">
+              Juegos{' '}
+              <span
+                className="text-gn-primary"
+                style={{ textShadow: '0 0 30px rgba(230,57,70,0.35)' }}
+              >
+                disponibles
+              </span>
+            </h1>
+          </div>
+
+          {session && (
+            <Link
+              href="/games/add"
+              className="flex items-center gap-2 bg-gn-primary hover:bg-gn-primary-dark
+                         text-white font-bold uppercase tracking-wider text-sm
+                         px-5 py-2.5 rounded-lg shadow-gn-red transition-all duration-200
+                         hover:-translate-y-0.5"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Agregar juego
+            </Link>
+          )}
+        </div>
+
+        {/* Buscador */}
+        <form method="GET" className="relative max-w-md mb-8">
+          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gn-muted" />
+          <input
+            type="text"
+            name="search"
+            placeholder="Buscar juegos, géneros..."
+            defaultValue={params.search ?? ''}
+            className="w-full pl-11 pr-5 py-3 bg-gn-card border border-white/[0.06]
+                       rounded-xl text-gn-text placeholder-gn-muted text-sm
+                       focus:outline-none focus:border-gn-primary/40 focus:ring-1
+                       focus:ring-gn-primary/20 transition-all"
+          />
+        </form>
+
+        {/* Contador resultados */}
+        {params.search && (
+          <p className="text-gn-muted text-sm mb-4">
+            Resultados para{' '}
+            <span className="text-gn-text font-semibold">"{params.search}"</span>
+          </p>
+        )}
+      </div>
+
+      {/* Grid */}
+      <div className="max-w-7xl mx-auto px-6 pb-16">
+        <Suspense fallback={<GamesSkeleton />}>
+          <GamesGrid searchQuery={params.search} />
+        </Suspense>
+      </div>
     </div>
   )
 }

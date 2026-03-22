@@ -1,143 +1,109 @@
-// src/components/Navigation.tsx
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
+import { useSession, signIn, signOut } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
+import Image from 'next/image'
+import { GamepadIcon, ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
-import { UserIcon, LogOutIcon, GamepadIcon, HomeIcon, ChevronDownIcon } from 'lucide-react'
+
+const navLinks = [
+  { href: '/games',     label: 'Juegos'    },
+  { href: '/games/add', label: 'Agregar'   },
+]
 
 export default function Navigation() {
   const { data: session } = useSession()
-  const [showUserMenu, setShowUserMenu] = useState(false)
+  const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo y navegación principal */}
-          <div className="flex items-center space-x-8">
-            <Link href="/" className="flex items-center space-x-2">
-              <GamepadIcon className="w-8 h-8 text-indigo-600" />
-              <span className="text-xl font-bold text-gray-900">GameNook</span>
+    <header className="sticky top-0 z-50 bg-gn-bg/85 backdrop-blur-xl border-b border-white/[0.06]">
+      <div className="max-w-6xl mx-auto px-6 h-15 flex items-center justify-between h-[60px]">
+
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-7 h-7 bg-gn-primary rounded-md flex items-center justify-center">
+            <GamepadIcon className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-display font-black text-lg tracking-wide">
+            <span className="text-gn-text">Game</span>
+            <span className="text-gn-primary">Nook</span>
+          </span>
+        </Link>
+
+        {/* Links */}
+        <nav className="hidden md:flex items-center gap-6">
+          {navLinks.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`text-sm font-semibold uppercase tracking-widest transition-colors duration-200 ${
+                pathname === l.href
+                  ? 'text-gn-text'
+                  : 'text-gn-muted hover:text-gn-text'
+              }`}
+            >
+              {l.label}
             </Link>
-            
-            <div className="hidden md:flex items-center space-x-6">
-              <Link 
-                href="/" 
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center"
-              >
-                <HomeIcon className="w-4 h-4 mr-2" />
-                Inicio
-              </Link>
-              <Link 
-                href="/games" 
-                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center"
-              >
-                <GamepadIcon className="w-4 h-4 mr-2" />
-                Juegos
-              </Link>
-            </div>
-          </div>
+          ))}
+        </nav>
 
-          {/* Usuario */}
-          <div className="flex items-center">
-            {session ? (
-              <div className="relative">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
-                    {session.user?.image ? (
-                      <img 
-                        src={session.user.image} 
-                        alt={session.user.name || 'Usuario'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-500">
-                        <UserIcon className="w-5 h-5" />
-                      </div>
-                    )}
+        {/* Auth */}
+        <div className="flex items-center gap-3">
+          {session ? (
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex items-center gap-2 bg-gn-card border border-white/[0.08] rounded-lg px-3 py-1.5 hover:border-white/15 transition-colors"
+              >
+                {session.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt="avatar"
+                    width={24} height={24}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-gn-primary/20 flex items-center justify-center text-gn-primary text-xs font-bold">
+                    {session.user?.name?.[0] ?? '?'}
                   </div>
-                  <span className="hidden md:block text-sm font-medium text-gray-700">
-                    {session.user?.name || session.user?.email}
-                  </span>
-                  <ChevronDownIcon className={`w-4 h-4 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Menú desplegable */}
-                {showUserMenu && (
-                  <>
-                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                      <div className="p-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">
-                          {session.user?.name || 'Usuario'}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {session.user?.email}
-                        </p>
-                      </div>
-                      
-                      <div className="py-1">
-                        <Link
-                          href="/profile"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                          onClick={() => setShowUserMenu(false)}
-                        >
-                          <UserIcon className="w-4 h-4 mr-3" />
-                          Mi Perfil
-                        </Link>
-                        <button
-                          onClick={() => {
-                            signOut()
-                            setShowUserMenu(false)
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
-                        >
-                          <LogOutIcon className="w-4 h-4 mr-3" />
-                          Cerrar Sesión
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Overlay para cerrar el menú */}
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowUserMenu(false)}
-                    />
-                  </>
                 )}
-              </div>
-            ) : (
-              <Link
-                href="/auth/signin"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
-              >
-                Iniciar Sesión
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
+                <span className="text-gn-text text-sm font-semibold hidden sm:block max-w-[100px] truncate">
+                  {session.user?.name}
+                </span>
+                <ChevronDownIcon className="w-3.5 h-3.5 text-gn-muted" />
+              </button>
 
-      {/* Navegación móvil */}
-      <div className="md:hidden border-t border-gray-200">
-        <div className="px-4 py-3 space-y-1">
-          <Link 
-            href="/" 
-            className="block text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Inicio
-          </Link>
-          <Link 
-            href="/games" 
-            className="block text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Juegos
-          </Link>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-44 bg-gn-card border border-white/[0.08] rounded-xl overflow-hidden shadow-xl">
+                  <Link
+                    href="/profile"
+                    onClick={() => setMenuOpen(false)}
+                    className="block px-4 py-2.5 text-sm text-gn-muted hover:text-gn-text hover:bg-white/5 transition-colors"
+                  >
+                    Mi perfil
+                  </Link>
+                  <div className="h-px bg-white/[0.06]" />
+                  <button
+                    onClick={() => { signOut(); setMenuOpen(false) }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gn-primary hover:bg-gn-primary/10 transition-colors"
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => signIn('google')}
+              className="bg-gn-primary hover:bg-gn-primary-dark text-white text-sm font-bold uppercase tracking-wider px-5 py-2 rounded-lg shadow-gn-red transition-all duration-200"
+            >
+              ▶ Entrar
+            </button>
+          )}
         </div>
       </div>
-    </nav>
+    </header>
   )
 }

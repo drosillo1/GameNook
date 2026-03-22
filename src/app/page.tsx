@@ -1,63 +1,155 @@
-// src/app/page.tsx
 import Link from 'next/link'
-import UserButton from '@/components/UserButton'
+import { StarIcon, BookOpenIcon, UsersIcon } from 'lucide-react'
+
+const features = [
+  {
+    icon: <StarIcon className="w-5 h-5" />,
+    title: 'Sistema gaming',
+    desc: 'Puntúa del 1 al 10 con iconos temáticos: desde Jugable hasta Obra Maestra.',
+    accent: 'border-t-gn-primary',
+    iconBg: 'bg-gn-primary/10 text-gn-primary',
+  },
+  {
+    icon: <BookOpenIcon className="w-5 h-5" />,
+    title: 'Tu biblioteca',
+    desc: 'Lleva el registro de todo lo que has jugado, estás jugando o tienes pendiente.',
+    accent: 'border-t-gn-accent',
+    iconBg: 'bg-gn-accent/10 text-gn-accent',
+  },
+  {
+    icon: <UsersIcon className="w-5 h-5" />,
+    title: 'Comunidad',
+    desc: 'Lee opiniones reales de otros gamers y descubre tu próxima obsesión.',
+    accent: 'border-t-gn-secondary',
+    iconBg: 'bg-gn-secondary/10 text-gn-secondary',
+  },
+]
+
+const ratings = [
+  { range: '1-2', icon: '🎮', label: 'Jugable',       color: 'text-gray-400  border-gray-500/30  bg-gray-500/10'  },
+  { range: '3-4', icon: '❤️', label: 'Entretenido',   color: 'text-blue-400  border-blue-500/30  bg-blue-500/10'  },
+  { range: '5-6', icon: '⚡', label: 'Recomendado',   color: 'text-purple-400 border-purple-500/30 bg-purple-500/10'},
+  { range: '7-8', icon: '🏆', label: 'Imprescindible',color: 'text-orange-400 border-orange-500/30 bg-orange-500/10'},
+  { range: '9-10',icon: '👑', label: 'Obra Maestra',  color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'},
+]
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
-      {/* Hero Section */}
-      <div className="px-6 py-20">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-            Tu biblioteca de
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-              {" videojuegos"}
+    <div className="min-h-screen bg-gn-bg font-body">
+
+      {/* ── HERO ── */}
+      <section className="relative min-h-[85vh] flex items-center justify-center text-center px-6 py-24 overflow-hidden">
+        {/* glow + grid */}
+        <div className="absolute inset-0 bg-gn-hero-glow" />
+        <div
+          className="absolute inset-0 bg-gn-grid opacity-100"
+          style={{
+            backgroundSize: '48px 48px',
+            maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 80%)',
+          }}
+        />
+
+        <div className="relative max-w-3xl mx-auto">
+          {/* badge */}
+          <div className="inline-flex items-center gap-2 bg-gn-primary/10 border border-gn-primary/30 rounded-full px-4 py-1.5 mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-gn-primary animate-pulse" />
+            <span className="text-gn-primary text-xs font-semibold tracking-widest uppercase">
+              Tu plataforma gaming
+            </span>
+          </div>
+
+          <h1 className="font-display font-black text-5xl md:text-7xl leading-tight tracking-tight mb-5 text-gn-text">
+            Reseña cada<br />
+            <span
+              className="text-gn-primary"
+              style={{ textShadow: '0 0 40px rgba(230,57,70,0.4)' }}
+            >
+              aventura
             </span>
           </h1>
-          
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Descubre, reseña y comparte tus videojuegos favoritos. 
-            Conecta con otros gamers y encuentra tu próxima aventura.
+
+          <p className="text-gn-muted text-lg leading-relaxed max-w-xl mx-auto mb-10">
+            Puntúa, descubre y comparte los videojuegos que te han marcado.
+            Una comunidad hecha por gamers, para gamers.
           </p>
 
-          <div className="flex gap-4 justify-center">
-            <Link href="/games" className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors inline-block icon-animate">
-              Explorar juegos
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Link
+              href="/games"
+              className="bg-gn-primary hover:bg-gn-primary-dark text-white font-bold uppercase tracking-wider px-8 py-3.5 rounded-lg shadow-gn-red hover:shadow-gn-red-lg transition-all duration-200 hover:-translate-y-0.5"
+            >
+              ▶ Explorar juegos
+            </Link>
+            <Link
+              href="/auth/signin"
+              className="border border-gn-subtle hover:border-gn-muted text-gn-text font-semibold uppercase tracking-wider px-8 py-3.5 rounded-lg hover:bg-white/5 transition-all duration-200"
+            >
+              Crea tu cuenta
             </Link>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Features */}
-      <div className="px-6 py-16">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">⭐</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Reseña tus juegos</h3>
-              <p className="text-gray-400">Puntúa del 1 al 10 y escribe reseñas detalladas de tus videojuegos favoritos.</p>
+      {/* ── STATS ── */}
+      <div className="bg-gn-surface border-y border-white/[0.06]">
+        <div className="max-w-2xl mx-auto px-6 py-5 flex justify-center gap-16">
+          {[
+            { num: '1,240+', label: 'Juegos' },
+            { num: '8,500+', label: 'Reseñas' },
+            { num: '3,200+', label: 'Gamers' },
+          ].map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="font-display font-bold text-2xl text-gn-primary">{s.num}</div>
+              <div className="text-gn-muted text-xs uppercase tracking-widest mt-0.5">{s.label}</div>
             </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">📚</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Tu biblioteca personal</h3>
-              <p className="text-gray-400">Mantén un registro de todos los juegos que has jugado y tus calificaciones.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">👥</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Comunidad gamer</h3>
-              <p className="text-gray-400">Conecta con otros jugadores, lee sus reseñas y participa en foros de juegos.</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
+
+      {/* ── FEATURES ── */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-2">// Por qué GameNook</p>
+          <h2 className="font-display font-bold text-3xl text-gn-text">Todo en un solo lugar</h2>
+        </div>
+        <div className="grid md:grid-cols-3 gap-5">
+          {features.map((f) => (
+            <div
+              key={f.title}
+              className={`bg-gn-card border border-white/[0.06] rounded-xl p-7 border-t-2 ${f.accent} hover:border-white/10 hover:-translate-y-1 transition-all duration-200`}
+            >
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-5 ${f.iconBg}`}>
+                {f.icon}
+              </div>
+              <h3 className="font-display font-bold text-sm tracking-wide mb-2 text-gn-text">{f.title}</h3>
+              <p className="text-gn-muted text-sm leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── RATING SYSTEM ── */}
+      <section className="bg-gn-surface border-y border-white/[0.06] py-16 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-2">// Sistema de puntuación</p>
+          <h2 className="font-display font-bold text-3xl text-gn-text mb-8">
+            No hay estrellas. Hay niveles.
+          </h2>
+          <div className="flex flex-wrap justify-center gap-3">
+            {ratings.map((r) => (
+              <div
+                key={r.range}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${r.color}`}
+              >
+                <span className="font-display font-bold text-base">{r.range}</span>
+                <span className="text-base">{r.icon}</span>
+                <span className="text-xs font-semibold uppercase tracking-wide">{r.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
     </div>
   )
 }
