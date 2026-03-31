@@ -3,26 +3,22 @@
 import Link from 'next/link'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
-import Image from 'next/image'
-import { GamepadIcon, ChevronDownIcon } from 'lucide-react'
+import { GamepadIcon, ChevronDownIcon, ShieldIcon } from 'lucide-react'
 import { useState } from 'react'
-
-const navLinks = [
-  { href: '/games',     label: 'Juegos'    },
-  { href: '/games/add', label: 'Agregar'   },
-]
 
 export default function Navigation() {
   const { data: session } = useSession()
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
 
+  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'MODERATOR'
+
   return (
     <header className="sticky top-0 z-50 bg-gn-bg/85 backdrop-blur-xl border-b border-white/[0.06]">
-      <div className="max-w-6xl mx-auto px-6 h-15 flex items-center justify-between h-[60px]">
+      <div className="max-w-6xl mx-auto px-6 flex items-center justify-between h-[60px]">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-2">
           <div className="w-7 h-7 bg-gn-primary rounded-md flex items-center justify-center">
             <GamepadIcon className="w-4 h-4 text-white" />
           </div>
@@ -34,19 +30,51 @@ export default function Navigation() {
 
         {/* Links */}
         <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map((l) => (
+          <Link
+            href="/games"
+            className={`text-sm font-semibold uppercase tracking-widest transition-colors duration-200 ${
+              pathname === '/games' ? 'text-gn-text' : 'text-gn-muted hover:text-gn-text'
+            }`}
+          >
+            Juegos
+          </Link>
+
+          {session && (
+            <>
+              <Link
+                href="/collection"
+                className={`text-sm font-semibold uppercase tracking-widest transition-colors duration-200 ${
+                  pathname === '/collection' ? 'text-gn-text' : 'text-gn-muted hover:text-gn-text'
+                }`}
+              >
+                Colección
+              </Link>
+
+              <Link
+                href="/games/add"
+                className={`text-sm font-semibold uppercase tracking-widest transition-colors duration-200 ${
+                  pathname === '/games/add' ? 'text-gn-text' : 'text-gn-muted hover:text-gn-text'
+                }`}
+              >
+                Agregar
+              </Link>
+            </>
+          )}
+
+          {isAdmin && (
             <Link
-              key={l.href}
-              href={l.href}
-              className={`text-sm font-semibold uppercase tracking-widest transition-colors duration-200 ${
-                pathname === l.href
-                  ? 'text-gn-text'
-                  : 'text-gn-muted hover:text-gn-text'
+              href="/admin"
+              className={`flex items-center gap-1.5 text-sm font-semibold uppercase
+                          tracking-widest transition-colors duration-200 ${
+                pathname === '/admin'
+                  ? 'text-yellow-400'
+                  : 'text-yellow-500/70 hover:text-yellow-400'
               }`}
             >
-              {l.label}
+              <ShieldIcon className="w-3.5 h-3.5" />
+              Admin
             </Link>
-          ))}
+          )}
         </nav>
 
         {/* Auth */}
@@ -55,49 +83,123 @@ export default function Navigation() {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="flex items-center gap-2 bg-gn-card border border-white/[0.08] rounded-lg px-3 py-1.5 hover:border-white/15 transition-colors"
+                className="flex items-center gap-2 bg-gn-card border border-white/[0.08]
+                           rounded-lg px-3 py-1.5 hover:border-white/15 transition-colors"
               >
                 {session.user?.image ? (
                   <img
                     src={session.user.image}
                     alt="avatar"
-                    width={24} height={24}
-                    className="rounded-full"
+                    width={24}
+                    height={24}
+                    className="rounded-full w-6 h-6 object-cover"
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-gn-primary/20 flex items-center justify-center text-gn-primary text-xs font-bold">
+                  <div className="w-6 h-6 rounded-full bg-gn-primary/20 flex items-center
+                                  justify-center text-gn-primary text-xs font-bold">
                     {session.user?.name?.[0] ?? '?'}
                   </div>
                 )}
-                <span className="text-gn-text text-sm font-semibold hidden sm:block max-w-[100px] truncate">
+                <span className="text-gn-text text-sm font-semibold hidden sm:block
+                                 max-w-[100px] truncate">
                   {session.user?.name}
                 </span>
-                <ChevronDownIcon className="w-3.5 h-3.5 text-gn-muted" />
+                <ChevronDownIcon
+                  className={`w-3.5 h-3.5 text-gn-muted transition-transform duration-200 ${
+                    menuOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-44 bg-gn-card border border-white/[0.08] rounded-xl overflow-hidden shadow-xl">
-                  <Link
-                    href="/profile"
+                <>
+                  {/* Overlay para cerrar */}
+                  <div
+                    className="fixed inset-0 z-10"
                     onClick={() => setMenuOpen(false)}
-                    className="block px-4 py-2.5 text-sm text-gn-muted hover:text-gn-text hover:bg-white/5 transition-colors"
-                  >
-                    Mi perfil
-                  </Link>
-                  <div className="h-px bg-white/[0.06]" />
-                  <button
-                    onClick={() => { signOut(); setMenuOpen(false) }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gn-primary hover:bg-gn-primary/10 transition-colors"
-                  >
-                    Cerrar sesión
-                  </button>
-                </div>
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-gn-card border
+                                  border-white/[0.08] rounded-xl overflow-hidden shadow-xl z-20">
+
+                    {/* Info usuario */}
+                    <div className="px-4 py-3 border-b border-white/[0.06]">
+                      <p className="text-gn-text text-xs font-semibold truncate">
+                        {session.user?.name}
+                      </p>
+                      <p className="text-gn-muted text-[11px] truncate mt-0.5">
+                        {session.user?.email}
+                      </p>
+                      {isAdmin && (
+                        <span className="inline-block mt-1.5 px-2 py-0.5 rounded text-[10px]
+                                         font-bold uppercase tracking-wide bg-yellow-500/10
+                                         border border-yellow-500/25 text-yellow-400">
+                          {session.user?.role === 'ADMIN' ? '👑 Admin' : '🛡 Moderador'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Links del menú */}
+                    <div className="p-1">
+                      <Link
+                        href="/profile"
+                        onClick={() => setMenuOpen(false)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm
+                                    transition-colors ${
+                          pathname === '/profile'
+                            ? 'text-gn-text bg-white/5'
+                            : 'text-gn-muted hover:text-gn-text hover:bg-white/5'
+                        }`}
+                      >
+                        Mi perfil
+                      </Link>
+
+                      <Link
+                        href="/collection"
+                        onClick={() => setMenuOpen(false)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm
+                                    transition-colors ${
+                          pathname === '/collection'
+                            ? 'text-gn-text bg-white/5'
+                            : 'text-gn-muted hover:text-gn-text hover:bg-white/5'
+                        }`}
+                      >
+                        Mi colección
+                      </Link>
+
+                      {isAdmin && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
+                                     text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/5
+                                     transition-colors"
+                        >
+                          Panel de admin
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="h-px bg-white/[0.06]" />
+
+                    <div className="p-1">
+                      <button
+                        onClick={() => { signOut(); setMenuOpen(false) }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm
+                                   text-gn-primary hover:bg-gn-primary/10 transition-colors"
+                      >
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           ) : (
             <button
               onClick={() => signIn('google')}
-              className="bg-gn-primary hover:bg-gn-primary-dark text-white text-sm font-bold uppercase tracking-wider px-5 py-2 rounded-lg shadow-gn-red transition-all duration-200"
+              className="bg-gn-primary hover:bg-gn-primary-dark text-white text-sm font-bold
+                         uppercase tracking-wider px-5 py-2 rounded-lg shadow-gn-red
+                         transition-all duration-200 hover:-translate-y-0.5"
             >
               ▶ Entrar
             </button>

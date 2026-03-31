@@ -1,5 +1,10 @@
+// src/app/page.tsx
 import Link from 'next/link'
 import { StarIcon, BookOpenIcon, UsersIcon } from 'lucide-react'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { RatingSystemShowcase } from '@/components/RatingSystemShowcase'
+import HeroCharacters from '@/components/HeroCharacters'
 
 const features = [
   {
@@ -25,40 +30,33 @@ const features = [
   },
 ]
 
-const ratings = [
-  { range: '1-2', icon: '🎮', label: 'Jugable',       color: 'text-gray-400  border-gray-500/30  bg-gray-500/10'  },
-  { range: '3-4', icon: '❤️', label: 'Entretenido',   color: 'text-blue-400  border-blue-500/30  bg-blue-500/10'  },
-  { range: '5-6', icon: '⚡', label: 'Recomendado',   color: 'text-purple-400 border-purple-500/30 bg-purple-500/10'},
-  { range: '7-8', icon: '🏆', label: 'Imprescindible',color: 'text-orange-400 border-orange-500/30 bg-orange-500/10'},
-  { range: '9-10',icon: '👑', label: 'Obra Maestra',  color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'},
-]
+export default async function Home() {
+  const session = await getServerSession(authOptions)
 
-export default function Home() {
   return (
     <div className="min-h-screen bg-gn-bg font-body">
 
       {/* ── HERO ── */}
-      <section className="relative min-h-[85vh] flex items-center justify-center text-center px-6 py-24 overflow-hidden">
-        {/* glow + grid */}
+      <section className="relative min-h-[85vh] flex items-center justify-center
+                          text-center px-6 py-24 overflow-hidden">
+        {/* Fondos */}
         <div className="absolute inset-0 bg-gn-hero-glow" />
         <div
-          className="absolute inset-0 bg-gn-grid opacity-100"
+          className="absolute inset-0 bg-gn-grid"
           style={{
             backgroundSize: '48px 48px',
             maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 80%)',
           }}
         />
 
-        <div className="relative max-w-3xl mx-auto">
-          {/* badge */}
-          <div className="inline-flex items-center gap-2 bg-gn-primary/10 border border-gn-primary/30 rounded-full px-4 py-1.5 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-gn-primary animate-pulse" />
-            <span className="text-gn-primary text-xs font-semibold tracking-widest uppercase">
-              Tu plataforma gaming
-            </span>
-          </div>
+        {/* Personajes — solo lg+ */}
+        <HeroCharacters />
 
-          <h1 className="font-display font-black text-5xl md:text-7xl leading-tight tracking-tight mb-5 text-gn-text">
+        {/* Contenido central */}
+        <div className="relative z-10 max-w-2xl mx-auto">
+
+          <h1 className="font-display font-black text-5xl md:text-7xl leading-tight
+                         tracking-tight mb-5 text-gn-text">
             Reseña cada<br />
             <span
               className="text-gn-primary"
@@ -76,16 +74,23 @@ export default function Home() {
           <div className="flex gap-3 justify-center flex-wrap">
             <Link
               href="/games"
-              className="bg-gn-primary hover:bg-gn-primary-dark text-white font-bold uppercase tracking-wider px-8 py-3.5 rounded-lg shadow-gn-red hover:shadow-gn-red-lg transition-all duration-200 hover:-translate-y-0.5"
+              className="bg-gn-primary hover:bg-gn-primary-dark text-white font-bold
+                         uppercase tracking-wider px-8 py-3.5 rounded-lg shadow-gn-red
+                         hover:shadow-gn-red-lg transition-all duration-200 hover:-translate-y-0.5"
             >
               ▶ Explorar juegos
             </Link>
-            <Link
-              href="/auth/signin"
-              className="border border-gn-subtle hover:border-gn-muted text-gn-text font-semibold uppercase tracking-wider px-8 py-3.5 rounded-lg hover:bg-white/5 transition-all duration-200"
-            >
-              Crea tu cuenta
-            </Link>
+
+            {!session && (
+              <Link
+                href="/auth/signin"
+                className="border border-gn-subtle hover:border-gn-muted text-gn-text
+                           font-semibold uppercase tracking-wider px-8 py-3.5 rounded-lg
+                           hover:bg-white/5 transition-all duration-200"
+              >
+                Crear cuenta
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -94,13 +99,15 @@ export default function Home() {
       <div className="bg-gn-surface border-y border-white/[0.06]">
         <div className="max-w-2xl mx-auto px-6 py-5 flex justify-center gap-16">
           {[
-            { num: '1,240+', label: 'Juegos' },
+            { num: '1,240+', label: 'Juegos'  },
             { num: '8,500+', label: 'Reseñas' },
-            { num: '3,200+', label: 'Gamers' },
+            { num: '3,200+', label: 'Gamers'  },
           ].map((s) => (
             <div key={s.label} className="text-center">
               <div className="font-display font-bold text-2xl text-gn-primary">{s.num}</div>
-              <div className="text-gn-muted text-xs uppercase tracking-widest mt-0.5">{s.label}</div>
+              <div className="text-gn-muted text-xs uppercase tracking-widest mt-0.5">
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
@@ -109,19 +116,28 @@ export default function Home() {
       {/* ── FEATURES ── */}
       <section className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-2">// Por qué GameNook</p>
-          <h2 className="font-display font-bold text-3xl text-gn-text">Todo en un solo lugar</h2>
+          <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-2">
+            // Por qué GameNook
+          </p>
+          <h2 className="font-display font-bold text-3xl text-gn-text">
+            Todo en un solo lugar
+          </h2>
         </div>
+
         <div className="grid md:grid-cols-3 gap-5">
           {features.map((f) => (
             <div
               key={f.title}
-              className={`bg-gn-card border border-white/[0.06] rounded-xl p-7 border-t-2 ${f.accent} hover:border-white/10 hover:-translate-y-1 transition-all duration-200`}
+              className={`bg-gn-card border border-white/[0.06] rounded-xl p-7 border-t-2
+                          ${f.accent} hover:border-white/10 hover:-translate-y-1
+                          transition-all duration-200`}
             >
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-5 ${f.iconBg}`}>
                 {f.icon}
               </div>
-              <h3 className="font-display font-bold text-sm tracking-wide mb-2 text-gn-text">{f.title}</h3>
+              <h3 className="font-display font-bold text-sm tracking-wide mb-2 text-gn-text">
+                {f.title}
+              </h3>
               <p className="text-gn-muted text-sm leading-relaxed">{f.desc}</p>
             </div>
           ))}
@@ -131,22 +147,13 @@ export default function Home() {
       {/* ── RATING SYSTEM ── */}
       <section className="bg-gn-surface border-y border-white/[0.06] py-16 px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-2">// Sistema de puntuación</p>
+          <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-2">
+            // Sistema de puntuación
+          </p>
           <h2 className="font-display font-bold text-3xl text-gn-text mb-8">
             No hay estrellas. Hay niveles.
           </h2>
-          <div className="flex flex-wrap justify-center gap-3">
-            {ratings.map((r) => (
-              <div
-                key={r.range}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${r.color}`}
-              >
-                <span className="font-display font-bold text-base">{r.range}</span>
-                <span className="text-base">{r.icon}</span>
-                <span className="text-xs font-semibold uppercase tracking-wide">{r.label}</span>
-              </div>
-            ))}
-          </div>
+          <RatingSystemShowcase />
         </div>
       </section>
 

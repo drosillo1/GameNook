@@ -5,15 +5,18 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { PlusIcon, SearchIcon } from 'lucide-react'
+import { PxlKitIcon } from '@pxlkit/core'
+import { Crown, Trophy, Medal, Shield, Heart, Sword } from '@pxlkit/gamification'
 
 // ── Helpers de rating ──────────────────────────────────────────
 function getRatingMeta(rating: number | null) {
   if (!rating) return null
-  if (rating >= 9)  return { icon: '👑', label: 'Obra Maestra', color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' }
-  if (rating >= 7)  return { icon: '🏆', label: 'Imprescindible', color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' }
-  if (rating >= 5)  return { icon: '⚡', label: 'Recomendado',    color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' }
-  if (rating >= 3)  return { icon: '❤️', label: 'Entretenido',    color: 'text-blue-400 border-blue-500/30 bg-blue-500/10' }
-  return               { icon: '🎮', label: 'Jugable',          color: 'text-gray-400 border-gray-500/30 bg-gray-500/10' }
+  if (rating === 10) return { icon: <PxlKitIcon icon={Crown} size={16} />, label: 'Obra Maestra',   color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' }
+  if (rating === 9)  return { icon: <PxlKitIcon icon={Trophy} size={16} />, label: 'Imprescindible', color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' }
+  if (rating >= 7)   return { icon: <PxlKitIcon icon={Medal} size={16} />, label: 'Muy Bueno',      color: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' }
+  if (rating >= 5)   return { icon: <PxlKitIcon icon={Shield} size={16} />, label: 'Recomendado',    color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' }
+  if (rating >= 3)   return { icon: <PxlKitIcon icon={Heart} size={16} />, label: 'Entretenido',    color: 'text-blue-400 border-blue-500/30 bg-blue-500/10' }
+  return               { icon: <PxlKitIcon icon={Sword} size={16} />, label: 'Jugable',            color: 'text-gray-400 border-gray-500/30 bg-gray-500/10' }
 }
 
 // ── Data fetch ─────────────────────────────────────────────────
@@ -67,7 +70,7 @@ function GameCard({ game }: { game: any }) {
                          ${meta ? 'text-gn-text' : 'text-gn-muted'}`}
              style={{ fontFamily: 'var(--font-display, monospace)' }}>
           {meta
-            ? <><span>{game.averageRating.toFixed(1)}</span><span>{meta.icon}</span></>
+            ? <><span>{game.averageRating.toFixed(1)}</span>{meta.icon}</>
             : <span>—</span>
           }
         </div>

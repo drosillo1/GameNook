@@ -1,19 +1,8 @@
-// components/RatingGaming.tsx
-"use client"
+'use client'
 
 import { useState } from 'react'
-import { 
-  Skull, 
-  AlertTriangle, 
-  Frown, 
-  HelpCircle, 
-  ThumbsUp, 
-  Smile, 
-  Flame, 
-  Star, 
-  Trophy, 
-  Crown 
-} from 'lucide-react'
+import { PxlKitIcon } from '@pxlkit/core'
+import { Crown, Trophy, Medal, Shield, Heart, Sword } from '@pxlkit/gamification'
 
 interface RatingGamingProps {
   value: number
@@ -21,121 +10,129 @@ interface RatingGamingProps {
   disabled?: boolean
 }
 
-export default function RatingGaming({ value, onChange, disabled = false }: RatingGamingProps) {
-  const [hoveredValue, setHoveredValue] = useState<number | null>(null)
-  
-  const displayValue = hoveredValue ?? value
-  
-  // Sistema individual para cada puntuación
-  const getRatingConfig = (rating: number) => {
-    const configs = {
-      1: { icon: Skull, text: 'Desastre', color: 'text-red-600', bg: 'from-red-100 to-red-200' },
-      2: { icon: AlertTriangle, text: 'Malo', color: 'text-red-500', bg: 'from-red-50 to-red-150' },
-      3: { icon: Frown, text: 'Mediocre', color: 'text-orange-600', bg: 'from-orange-100 to-orange-200' },
-      4: { icon: HelpCircle, text: 'Dudoso', color: 'text-orange-500', bg: 'from-orange-50 to-orange-150' },
-      5: { icon: ThumbsUp, text: 'Decente', color: 'text-yellow-600', bg: 'from-yellow-100 to-yellow-200' },
-      6: { icon: Smile, text: 'Bueno', color: 'text-lime-600', bg: 'from-lime-100 to-lime-200' },
-      7: { icon: Flame, text: 'Genial', color: 'text-green-600', bg: 'from-green-100 to-green-200' },
-      8: { icon: Star, text: 'Excelente', color: 'text-blue-600', bg: 'from-blue-100 to-blue-200' },
-      9: { icon: Trophy, text: 'Imprescindible', color: 'text-purple-600', bg: 'from-purple-100 to-purple-200' },
-      10: { icon: Crown, text: 'Obra Maestra', color: 'text-yellow-500', bg: 'from-yellow-200 to-amber-200' }
-    }
-    return configs[rating as keyof typeof configs] || configs[5]
-  }
+const IconIcons = {
+  1:  Sword,
+  2:  Sword,
+  3:  Heart,
+  4:  Heart,
+  5:  Shield,
+  6:  Shield,
+  7:  Medal,
+  8:  Medal,
+  9:  Trophy,
+  10: Crown,
+} as const
 
-  const currentConfig = getRatingConfig(displayValue)
-  const IconComponent = currentConfig.icon
+// Sistema de 5 niveles (grupos de 2)
+const RATING_META = {
+  1:  { label: 'Jugable',        color: '#6b7280', chipClass: 'bg-gray-500/10  border-gray-500/30  text-gray-400'   },
+  2:  { label: 'Jugable',        color: '#6b7280', chipClass: 'bg-gray-500/10  border-gray-500/30  text-gray-400'   },
+  3:  { label: 'Entretenido',    color: '#3b82f6', chipClass: 'bg-blue-500/10  border-blue-500/30  text-blue-400'   },
+  4:  { label: 'Entretenido',    color: '#3b82f6', chipClass: 'bg-blue-500/10  border-blue-500/30  text-blue-400'   },
+  5:  { label: 'Recomendado',    color: '#a855f7', chipClass: 'bg-purple-500/10 border-purple-500/30 text-purple-400' },
+  6:  { label: 'Recomendado',    color: '#a855f7', chipClass: 'bg-purple-500/10 border-purple-500/30 text-purple-400' },
+  7:  { label: 'Muy Bueno',      color: '#06b6d4', chipClass: 'bg-cyan-500/10   border-cyan-500/30   text-cyan-400'    },
+  8:  { label: 'Muy Bueno',      color: '#06b6d4', chipClass: 'bg-cyan-500/10   border-cyan-500/30   text-cyan-400'    },
+  9:  { label: 'Imprescindible', color: '#f97316', chipClass: 'bg-orange-500/10 border-orange-500/30 text-orange-400' },
+  10: { label: 'Obra Maestra',   color: '#fbbf24', chipClass: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' },
+} as const
+
+export default function RatingGaming({ value, onChange, disabled = false }: RatingGamingProps) {
+  const [hovered, setHovered] = useState<number | null>(null)
+
+  const display = hovered ?? value
+  const meta    = RATING_META[display as keyof typeof RATING_META] ?? RATING_META[5]
+  const iconData = IconIcons[display as keyof typeof IconIcons]
 
   return (
-    <div className="space-y-6">
-      {/* Display central con icono */}
-      <div className="text-center">
-        <div className="relative inline-flex items-center justify-center">
-          <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${currentConfig.bg} flex items-center justify-center ${currentConfig.color}`}>
-            <IconComponent className="w-10 h-10" />
+    <div className="space-y-5">
+
+      {/* ── Display central ── */}
+      <div className={`flex items-center gap-4 px-4 py-3 rounded-xl border transition-all duration-200 ${meta.chipClass}`}>
+        <PxlKitIcon icon={iconData} size={32} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className="font-display font-black text-4xl leading-none"
+              style={{ color: meta.color, fontFamily: 'Orbitron, monospace' }}
+            >
+              {display}
+            </span>
+            <span className="text-gn-muted text-sm">/10</span>
           </div>
-          <div className="absolute -bottom-2 -right-2 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg border-2 border-gray-100">
-            <span className="text-sm font-bold text-gray-700">{displayValue}</span>
+          <p className="text-xs font-semibold uppercase tracking-widest mt-0.5"
+             style={{ color: meta.color }}>
+            {meta.label}
+          </p>
+        </div>
+
+        {/* Barra de progreso */}
+        <div className="w-24 flex flex-col gap-1">
+          <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${(display / 10) * 100}%`,
+                background: `linear-gradient(90deg, ${meta.color}80, ${meta.color})`,
+              }}
+            />
+          </div>
+          {/* Dots de nivel */}
+          <div className="flex justify-between px-0.5">
+            {[1, 2, 3, 4, 5].map(lvl => (
+              <div
+                key={lvl}
+                className="w-1.5 h-1.5 rounded-full transition-all duration-200"
+                style={{
+                  background: Math.ceil(display / 2) >= lvl ? meta.color : 'rgba(255,255,255,0.08)',
+                }}
+              />
+            ))}
           </div>
         </div>
-        <p className="text-lg font-semibold text-gray-900 mt-3">
-          {currentConfig.text}
-        </p>
-        <p className="text-sm text-gray-500">
-          {displayValue}/10
-        </p>
       </div>
 
-      {/* Grid de selección con iconos individuales */}
-      <div className="grid grid-cols-5 gap-3 max-w-md mx-auto">
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((rating) => {
-          const isSelected = rating <= value
-          const isHovered = hoveredValue !== null && rating <= hoveredValue
-          const config = getRatingConfig(rating)
-          const IconComp = config.icon
-          
+      {/* ── Grid 5×2 ── */}
+      <div className="grid grid-cols-5 gap-2">
+        {Array.from({ length: 10 }, (_, i) => i + 1).map(rating => {
+          const m         = RATING_META[rating as keyof typeof RATING_META]
+          const iconData  = IconIcons[rating as keyof typeof IconIcons]
+          const isActive  = rating <= (hovered ?? value)
+          const isExact   = rating === value
+
           return (
             <button
               key={rating}
+              type="button"
               onClick={() => !disabled && onChange(rating)}
-              onMouseEnter={() => !disabled && setHoveredValue(rating)}
-              onMouseLeave={() => setHoveredValue(null)}
+              onMouseEnter={() => !disabled && setHovered(rating)}
+              onMouseLeave={() => setHovered(null)}
               disabled={disabled}
-              title={`${rating}/10 - ${config.text}`}
               className={`
-                relative w-12 h-12 rounded-full transition-all duration-200 transform
-                ${disabled 
-                  ? 'opacity-50 cursor-not-allowed bg-gray-100' 
-                  : 'cursor-pointer hover:scale-110'
+                relative flex flex-col items-center justify-center gap-1
+                py-2.5 rounded-lg border transition-all duration-150
+                ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:-translate-y-0.5'}
+                ${isActive
+                  ? `${m.chipClass} shadow-sm`
+                  : 'bg-white/[0.02] border-white/[0.06] text-gn-muted hover:border-white/15'
                 }
-                ${isSelected || isHovered
-                  ? `${config.color} bg-gradient-to-br ${config.bg} shadow-lg scale-105 ring-2 ring-offset-1 ring-gray-300`
-                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                }
+                ${isExact && !hovered ? 'ring-1 ring-offset-1 ring-offset-gn-card' : ''}
               `}
+              style={isExact && !hovered ? { ringColor: m.color } : {}}
             >
-              <IconComp className="w-6 h-6 mx-auto" />
-              <span className="absolute -bottom-1 -right-1 text-xs font-bold bg-white rounded-full w-5 h-5 flex items-center justify-center shadow border">
+              <PxlKitIcon icon={iconData} size={24} />
+              <span
+                className="font-display font-bold text-xs leading-none"
+                style={{
+                  fontFamily: 'Orbitron, monospace',
+                  color: isActive ? m.color : undefined,
+                }}
+              >
                 {rating}
               </span>
             </button>
           )
         })}
-      </div>
-
-      {/* Barra de nivel estilo gaming */}
-      <div className="max-w-sm mx-auto">
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-          <span>NIVEL</span>
-          <span>{Math.ceil(displayValue / 2)}/5</span>
-        </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className={`h-full rounded-full transition-all duration-500 ${
-              displayValue <= 2 ? 'bg-gradient-to-r from-red-400 to-red-500' :
-              displayValue <= 4 ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
-              displayValue <= 6 ? 'bg-gradient-to-r from-yellow-400 to-lime-500' :
-              displayValue <= 8 ? 'bg-gradient-to-r from-green-400 to-blue-500' :
-              'bg-gradient-to-r from-purple-500 to-yellow-500'
-            }`}
-            style={{ width: `${(displayValue / 10) * 100}%` }}
-          />
-        </div>
-        <div className="flex justify-between mt-1">
-          {[1, 2, 3, 4, 5].map((level) => (
-            <div 
-              key={level}
-              className={`w-2 h-2 rounded-full ${
-                Math.ceil(displayValue / 2) >= level ? 
-                  (displayValue >= 9 ? 'bg-yellow-500' : 
-                   displayValue >= 7 ? 'bg-blue-500' : 
-                   displayValue >= 5 ? 'bg-green-500' : 
-                   displayValue >= 3 ? 'bg-orange-500' : 'bg-red-500') 
-                : 'bg-gray-300'
-              }`}
-            />
-          ))}
-        </div>
       </div>
     </div>
   )

@@ -41,3 +41,35 @@ body {
   color: var(--gn-text);
   font-family: var(--font-geist-sans), Arial, sans-serif;
 }
+/* ── Character animations ── */
+@keyframes warrior-float {
+  0%, 100% { transform: translateY(0)    rotate(-1deg); }
+  50%       { transform: translateY(-18px) rotate(0deg); }
+}
+
+@keyframes mage-float {
+  0%, 100% { transform: translateY(0)    rotate(1deg); }
+  50%       { transform: translateY(-14px) rotate(0deg); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 12px rgba(230,57,70,0.5))
+                     drop-shadow(0 0 30px rgba(230,57,70,0.2)); }
+  50%       { filter: drop-shadow(0 0 22px rgba(230,57,70,0.85))
+                     drop-shadow(0 0 55px rgba(230,57,70,0.35)); }
+}
+
+@keyframes shadow-pulse {
+  0%, 100% { opacity: 0.5; transform: scaleX(1);    }
+  50%       { opacity: 0.2; transform: scaleX(0.82); }
+}
+
+.warrior-float {
+  animation: warrior-float 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.03));
+}
+
+.mage-float {
+  animation: mage-float 3.5s ease-in-out infinite 0.5s,
+             glow-pulse  3.5s ease-in-out infinite;
+}

@@ -7,19 +7,13 @@ import { authOptions } from '@/lib/auth'
 import ReviewForm from '@/components/ReviewForm'
 import ReviewCard from '@/components/ReviewCard'
 import { Calendar, Tag, Monitor, ChevronLeft } from 'lucide-react'
+import CollectionButton from '@/components/CollectionButton'
+import { RatingIcon } from '@/components/RatingIcon'
+import { getRatingData, getRatingBarColor, getRatingChipClass } from '@/lib/rating'
 
 // ── Tipos ──────────────────────────────────────────────────────
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
-}
-
-// ── Rating helpers ─────────────────────────────────────────────
-function getRatingMeta(rating: number) {
-  if (rating >= 9)  return { icon: '👑', label: 'Obra Maestra',   color: 'text-yellow-400', barColor: '#fbbf24', chipclassName: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' }
-  if (rating >= 7)  return { icon: '🏆', label: 'Imprescindible', color: 'text-orange-400', barColor: '#f97316', chipclassName: 'bg-orange-500/10 border-orange-500/30 text-orange-400' }
-  if (rating >= 5)  return { icon: '⚡', label: 'Recomendado',    color: 'text-purple-400', barColor: '#a855f7', chipclassName: 'bg-purple-500/10 border-purple-500/30 text-purple-400' }
-  if (rating >= 3)  return { icon: '❤️', label: 'Entretenido',    color: 'text-blue-400',   barColor: '#3b82f6', chipclassName: 'bg-blue-500/10 border-blue-500/30 text-blue-400' }
-  return               { icon: '🎮', label: 'Jugable',           color: 'text-gray-400',   barColor: '#6b7280', chipclassName: 'bg-gray-500/10 border-gray-500/30 text-gray-400' }
 }
 
 // ── Data ───────────────────────────────────────────────────────
@@ -55,7 +49,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   const stats      = calcStats(game.reviews)
   const userReview = session ? game.reviews.find(r => r.userId === session.user?.id) : null
-  const meta       = getRatingMeta(Math.round(stats.average) || 5)
+  const ratingData = getRatingData(Math.round(stats.average) || 5)
 
   return (
     <div className="min-h-screen bg-gn-bg font-body">
@@ -135,6 +129,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 ))}
               </div>
             )}
+            <div className="flex items-center gap-3 flex-wrap">
+              <CollectionButton gameId={game.id} />
+            </div>
 
             {game.description && (
               <p className="text-gn-muted text-sm leading-relaxed">{game.description}</p>
@@ -156,8 +153,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                     <span className="text-gn-muted text-lg">/10</span>
                   )}
                 </div>
-                <div className={`text-sm font-semibold uppercase tracking-wider mt-0.5 ${meta.color}`}>
-                  {meta.icon} {stats.average > 0 ? meta.label : 'Sin reseñas'}
+                <div className={`text-sm font-semibold uppercase tracking-wider mt-0.5 flex items-center gap-1.5 ${ratingData.tailwind}`}>
+                  <RatingIcon iconName={ratingData.iconName as any} size={20} />
+                  {stats.average > 0 ? ratingData.label : 'Sin reseñas'}
                 </div>
                 <div className="text-gn-muted text-xs mt-0.5">
                   {stats.total} {stats.total === 1 ? 'reseña' : 'reseñas'}
@@ -172,7 +170,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                       className="h-full rounded-full transition-all duration-700"
                       style={{
                         width: `${(stats.average / 10) * 100}%`,
-                        background: `linear-gradient(90deg, ${meta.barColor}99, ${meta.barColor})`,
+                        background: `linear-gradient(90deg, ${getRatingBarColor(Math.round(stats.average))}99, ${getRatingBarColor(Math.round(stats.average))})`,
                       }}
                     />
                   </div>
@@ -183,7 +181,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               {stats.total > 0 && (
                 <div className="hidden lg:block space-y-0.5">
                   {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(r => {
-                    const m   = getRatingMeta(r)
                     const pct = stats.total > 0 ? (stats.distribution[r - 1] / stats.total) * 100 : 0
                     return (
                       <div key={r} className="flex items-center gap-2">
@@ -193,7 +190,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                         <div className="w-16 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full"
-                            style={{ width: `${pct}%`, background: m.barColor }}
+                            style={{ width: `${pct}%`, background: getRatingBarColor(r) }}
                           />
                         </div>
                         <span className="text-[10px] text-gn-muted w-3">
@@ -282,4 +279,4 @@ export async function generateMetadata({ params }: GameDetailPageProps) {
     title: `${game.title} — GameNook`,
     description: game.description ?? `Reseñas de ${game.title} en GameNook`,
   }
-}hr
+}

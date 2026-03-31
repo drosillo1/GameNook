@@ -22,44 +22,35 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, user }) {
       if (session?.user && user) {
-        session.user.id = user.id;
-        // Asegurar que la imagen se incluya en la sesión
-        session.user.image = (user as any).avatar || session.user.image;
+        session.user.id   = user.id
+        session.user.role = (user as any).role ?? 'USER'
+        session.user.image = (user as any).avatar || session.user.image
       }
-      return session;
+      return session
     },
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
-          // Verificar que el email existe
-          if (!user.email) {
-            console.error("No email provided by Google")
-            return false;
-          }
+          if (!user.email) return false
 
-          // Buscar si el usuario ya existe
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email }
-          });
+          })
 
-          // Si el usuario existe, actualizar su avatar si es necesario
           if (existingUser && user.image && existingUser.avatar !== user.image) {
             await prisma.user.update({
               where: { email: user.email },
-              data: { 
-                avatar: user.image,
-                name: user.name || existingUser.name
-              }
-            });
+              data: { avatar: user.image, name: user.name || existingUser.name }
+            })
           }
-          
-          return true;
+
+          return true
         } catch (error) {
-          console.error("Error in signIn callback:", error);
-          return false;
+          console.error("Error in signIn callback:", error)
+          return false
         }
       }
-      return true;
+      return true
     },
   },
   debug: process.env.NODE_ENV === "development",
