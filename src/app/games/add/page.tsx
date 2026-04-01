@@ -1,8 +1,7 @@
-// src/app/games/add/page.tsx
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { ChevronLeft, LockIcon, LoaderIcon } from 'lucide-react'
@@ -50,24 +49,65 @@ function LockedField({ label, value, placeholder = '—' }: {
 export default function AddGamePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
-  const [isSubmitting,  setIsSubmitting]  = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isTranslating, setIsTranslating] = useState(false)
-  const [error,         setError]         = useState('')
-  const [igdbId,        setIgdbId]        = useState<number | null>(null)
-  const [igdbSelected,  setIgdbSelected]  = useState(false)
+  const [error, setError] = useState('')
+  const [igdbId, setIgdbId] = useState<number | null>(null)
+  const [igdbSelected, setIgdbSelected] = useState(false)
 
   // Descripción original de IGDB (ya traducida) para detectar cambios
   const [originalDescription, setOriginalDescription] = useState('')
-  const [description,         setDescription]         = useState('')
+  const [description, setDescription] = useState('')
 
   const [formData, setFormData] = useState({
-    title:       '',
-    imageUrl:    '',
+    title: '',
+    imageUrl: '',
     releaseDate: '',
-    genre:       [] as string[],
-    platform:    [] as string[],
+    genre: [] as string[],
+    platform: [] as string[],
   })
+
+  // useEffect para el autocompletado desde URL
+  useEffect(() => {
+    const igdbIdParam = searchParams.get('igdbId')
+    if (!igdbIdParam || isNaN(parseInt(igdbIdParam))) return
+
+    const id = parseInt(igdbIdParam)
+    setIsTranslating(true)
+
+    fetch(`/api/igdb/prefill/${id}`)
+      .then(r => r.json())
+      .then(async (game) => {
+        if (game.error) return
+
+        const releaseDate = game.first_release_date
+          ? new Date(game.first_release_date * 1000).toISOString().split('T')[0]
+          : ''
+
+        // La URL ya viene normalizada desde igdb.ts
+        const coverUrl = game.cover?.url ?? ''
+
+        const translated = game.summary
+          ? await translateToSpanish(game.summary)
+          : ''
+
+        setIgdbId(game.id)
+        setIgdbSelected(true)
+        setOriginalDescription(translated)
+        setDescription(translated)
+        setFormData({
+          title: game.name,
+          imageUrl: coverUrl,
+          releaseDate,
+          genre: game.genres?.map((g: any) => g.name) ?? [],
+          platform: game.platforms?.map((p: any) => p.name) ?? [],
+        })
+      })
+      .catch(console.error)
+      .finally(() => setIsTranslating(false))
+  }, [searchParams]) // Se ejecuta al montar o si cambian los params
 
   if (status === 'loading') {
     return (
@@ -85,8 +125,8 @@ export default function AddGamePage() {
     return null
   }
 
-  const isAdmin              = session.user.role === 'ADMIN' || session.user.role === 'MODERATOR'
-  const descriptionModified  = description.trim() !== originalDescription.trim()
+  const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'MODERATOR'
+  const descriptionModified = description.trim() !== originalDescription.trim()
 
   // ── Selección IGDB ──────────────────────────────────────────
   const handleIGDBSelect = async (game: IGDBGame) => {
@@ -109,11 +149,11 @@ export default function AddGamePage() {
     setOriginalDescription(translated)
     setDescription(translated)
     setFormData({
-      title:       game.name,
-      imageUrl:    coverUrl,
+      title: game.name,
+      imageUrl: coverUrl,
       releaseDate,
-      genre:       game.genres?.map(g => g.name)    ?? [],
-      platform:    game.platforms?.map(p => p.name) ?? [],
+      genre: game.genres?.map(g => g.name) ?? [],
+      platform: game.platforms?.map(p => p.name) ?? [],
     })
 
     setIsTranslating(false)
@@ -126,6 +166,8 @@ export default function AddGamePage() {
     setOriginalDescription('')
     setDescription('')
     setFormData({ title: '', imageUrl: '', releaseDate: '', genre: [], platform: [] })
+    // Opcional: Limpiar el query param de la URL para evitar recargas accidentales
+    router.replace('/games/add')
   }
 
   // ── Submit ──────────────────────────────────────────────────
@@ -142,9 +184,9 @@ export default function AddGamePage() {
 
     try {
       const res = await fetch('/api/games', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
+        body: JSON.stringify({
           ...formData,
           description,
           igdbId,
@@ -274,7 +316,7 @@ export default function AddGamePage() {
                       </span>
                     </div>
 
-                    <LockedField label="Título"    value={formData.title} />
+                    <LockedField label="Título" value={formData.title} />
 
                     <div className="grid sm:grid-cols-2 gap-4">
                       <LockedField
@@ -437,7 +479,7 @@ export default function AddGamePage() {
                 >
                   {isSubmitting   ? '⏳ Publicando...'      :
                    isTranslating  ? '⏳ Traduciendo...'     :
-                   !igdbSelected  ? 'Selecciona un juego'   :
+                   !igdbSelected  ? 'Selecciona un juego'    :
                                     '▶ Publicar juego'}
                 </button>
 

@@ -95,12 +95,11 @@ export async function searchIGDBGames(query: string): Promise<IGDBGame[]> {
   return (data as IGDBGame[]).map(game => ({
     ...game,
     cover: game.cover
-      ? { ...game.cover, url: game.cover.url.replace('t_thumb', 't_cover_big') }
+      ? { ...game.cover, url: normalizeImageUrl(game.cover.url, 't_cover_big') }
       : undefined,
   }))
 }
 
-// Obtener datos completos de un juego por igdbId
 export async function getIGDBGameDetails(igdbId: number): Promise<IGDBGame | null> {
   const data = await igdbFetch(
     'games',
@@ -132,18 +131,16 @@ export async function getIGDBGameDetails(igdbId: number): Promise<IGDBGame | nul
   return {
     ...game,
     cover: game.cover
-      ? { ...game.cover, url: game.cover.url.replace('t_thumb', 't_cover_big') }
+      ? { ...game.cover, url: normalizeImageUrl(game.cover.url, 't_cover_big') }
       : undefined,
     screenshots: (game.screenshots ?? []).map(s => ({
       ...s,
-      url: s.url
-        .replace('t_thumb', 't_screenshot_big')
-        .replace('//', 'https://'),
+      url: normalizeImageUrl(s.url, 't_screenshot_big'),
     })),
     similar_games: (game.similar_games ?? []).map(sg => ({
       ...sg,
       cover: sg.cover
-        ? { ...sg.cover, url: sg.cover.url.replace('t_thumb', 't_cover_big').replace('//', 'https://') }
+        ? { ...sg.cover, url: normalizeImageUrl(sg.cover.url, 't_cover_big') }
         : undefined,
     })),
   }

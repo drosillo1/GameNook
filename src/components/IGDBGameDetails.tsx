@@ -216,13 +216,14 @@ export default function IGDBGameDetails({ igdbId, gameSlug }: Props) {
       {similar.length > 0 && (
         <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6">
           <p className="text-gn-primary text-xs font-semibold uppercase
-                        tracking-widest mb-4">
-            // Juegos similares
+                  tracking-widest mb-4">
+      // Juegos similares
           </p>
 
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {similar.map(sg => {
-              const coverUrl  = sg.cover?.url ? `https:${sg.cover.url}` : null
+              // La URL ya viene normalizada desde igdb.ts — úsala directamente
+              const coverUrl = sg.cover?.url ?? null
               const localSlug = localSlugs[sg.id]
 
               const card = (
@@ -230,16 +231,16 @@ export default function IGDBGameDetails({ igdbId, gameSlug }: Props) {
                   {/* Portada 3:4 */}
                   <div
                     className="aspect-[3/4] bg-gn-surface rounded-lg overflow-hidden
-                               border border-white/[0.06] transition-all duration-200
-                               group-hover:border-gn-primary/40 group-hover:shadow-lg
-                               group-hover:shadow-gn-primary/10"
+                         border border-white/[0.06] transition-all duration-200
+                         group-hover:border-gn-primary/40"
                   >
                     {coverUrl ? (
                       <img
                         src={coverUrl}
                         alt={sg.name}
                         className="w-full h-full object-cover group-hover:scale-105
-                                   transition-transform duration-300"
+                             transition-transform duration-300"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -249,31 +250,45 @@ export default function IGDBGameDetails({ igdbId, gameSlug }: Props) {
                   </div>
 
                   {/* Nombre */}
-                  <p
-                    className="text-[11px] font-semibold leading-tight line-clamp-2
-                               text-gn-muted group-hover:text-gn-text transition-colors"
-                  >
+                  <p className="text-[11px] font-semibold leading-tight line-clamp-2
+                           text-gn-muted group-hover:text-gn-text transition-colors">
                     {sg.name}
                   </p>
 
-                  {/* Badge "En GameNook" si existe */}
-                  {localSlug && (
-                    <span
-                      className="text-[10px] font-bold uppercase tracking-wide
-                                 text-gn-primary"
-                    >
-                      En GameNook
+                  {/* Badge de estado */}
+                  {localSlug ? (
+                    <span className="text-[10px] font-bold uppercase tracking-wide
+                               text-green-400">
+                      ✓ En GameNook
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold uppercase tracking-wide
+                               text-gn-primary/70 group-hover:text-gn-primary
+                               transition-colors">
+                      + Añadir
                     </span>
                   )}
                 </div>
               )
 
-              return localSlug ? (
-                <Link key={sg.id} href={`/games/${localSlug}`}>
+              // Si está en GameNook → enlaza a su página
+              if (localSlug) {
+                return (
+                  <Link key={sg.id} href={`/games/${localSlug}`}>
+                    {card}
+                  </Link>
+                )
+              }
+
+              // Si NO está → enlaza a /games/add con el igdbId precargado
+              return (
+                <Link
+                  key={sg.id}
+                  href={`/games/add?igdbId=${sg.id}`}
+                  title={`Añadir "${sg.name}" a GameNook`}
+                >
                   {card}
                 </Link>
-              ) : (
-                <div key={sg.id}>{card}</div>
               )
             })}
           </div>
