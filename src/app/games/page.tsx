@@ -49,7 +49,7 @@ function GameCard({ game }: { game: any }) {
                  transition-all duration-200 flex flex-col"
     >
       {/* Imagen */}
-      <div className="aspect-video bg-gn-surface relative overflow-hidden">
+      <div className="aspect-[3/4] bg-gn-surface relative overflow-hidden">
         {game.imageUrl ? (
           <img
             src={game.imageUrl}
@@ -123,7 +123,7 @@ function GameCard({ game }: { game: any }) {
 // ── Skeleton ───────────────────────────────────────────────────
 function GamesSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="bg-gn-card border border-white/[0.06] rounded-xl overflow-hidden">
           <div className="aspect-video bg-gn-surface animate-pulse" />
@@ -177,7 +177,7 @@ async function GamesGrid({ searchQuery }: { searchQuery?: string }) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {games.map(game => <GameCard key={game.id} game={game} />)}
     </div>
   )

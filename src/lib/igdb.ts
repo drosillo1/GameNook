@@ -6,12 +6,16 @@ interface TwitchToken {
 
 let cachedToken: TwitchToken | null = null
 
+function normalizeImageUrl(url: string, size: string): string {
+  // Quita protocolo existente y añade https siempre
+  const clean = url.replace(/^https?:/, '').replace(/^\/\//, '')
+  return `https://${clean}`.replace('t_thumb', size)
+}
+
 async function getTwitchToken(): Promise<string> {
-  // Si el token existe y no ha expirado (con 5min de margen) lo reutilizamos
   if (cachedToken && Date.now() < cachedToken.expires_at - 300_000) {
     return cachedToken.access_token
   }
-
   const res = await fetch('https://id.twitch.tv/oauth2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -21,23 +25,17 @@ async function getTwitchToken(): Promise<string> {
       grant_type:    'client_credentials',
     }),
   })
-
   if (!res.ok) throw new Error('Error obteniendo token de Twitch')
-
   const data = await res.json()
-
   cachedToken = {
     access_token: data.access_token,
     expires_at:   Date.now() + data.expires_in * 1000,
   }
-
   return cachedToken.access_token
 }
 
-// Función base para llamar a IGDB
 async function igdbFetch(endpoint: string, body: string) {
   const token = await getTwitchToken()
-
   const res = await fetch(`https://api.igdb.com/v4/${endpoint}`, {
     method:  'POST',
     headers: {
@@ -47,26 +45,40 @@ async function igdbFetch(endpoint: string, body: string) {
     },
     body,
   })
-
   if (!res.ok) throw new Error(`IGDB error ${res.status}`)
   return res.json()
 }
 
 // ── Tipos ──────────────────────────────────────────────────────
 export interface IGDBGame {
-  id:           number
-  name:         string
-  slug:         string
-  summary?:     string
-  cover?:       { id: number; url: string }
-  first_release_date?: number   // Unix timestamp
-  genres?:      { id: number; name: string }[]
-  platforms?:   { id: number; name: string }[]
+  id:                  number
+  name:                string
+  slug:                string
+  summary?:            string
+  cover?:              { id: number; url: string }
+  screenshots?:        { id: number; url: string }[]
+  first_release_date?: number
+  genres?:             { id: number; name: string }[]
+  platforms?:          { id: number; name: string }[]
+  game_modes?:         { id: number; name: string }[]
+  involved_companies?: {
+    id:       number
+    company:  { id: number; name: string }
+    developer: boolean
+    publisher: boolean
+  }[]
+  similar_games?:      {
+    id:     number
+    name:   string
+    slug:   string
+    cover?: { id: number; url: string }
+    genres?:{ id: number; name: string }[]
+  }[]
+  collection?: { id: number; name: string }
+  franchises?: { id: number; name: string }[]
   rating?:      number
   rating_count?: number
 }
-
-// ── Queries públicas ───────────────────────────────────────────
 
 // Buscar juegos por nombre
 export async function searchIGDBGames(query: string): Promise<IGDBGame[]> {
@@ -80,8 +92,6 @@ export async function searchIGDBGames(query: string): Promise<IGDBGame[]> {
       limit 8;
     `
   )
-
-  // Convertir URL de portada a alta resolución
   return (data as IGDBGame[]).map(game => ({
     ...game,
     cover: game.cover
@@ -90,14 +100,28 @@ export async function searchIGDBGames(query: string): Promise<IGDBGame[]> {
   }))
 }
 
-// Obtener un juego por ID (para autocompletar todos los datos)
-export async function getIGDBGameById(id: number): Promise<IGDBGame | null> {
+// Obtener datos completos de un juego por igdbId
+export async function getIGDBGameDetails(igdbId: number): Promise<IGDBGame | null> {
   const data = await igdbFetch(
     'games',
     `
-      fields name, slug, summary, cover.url, first_release_date,
-             genres.name, platforms.name, rating, rating_count;
-      where id = ${id};
+      fields name, slug, summary, cover.url,
+             screenshots.url,
+             first_release_date,
+             genres.name,
+             platforms.name,
+             game_modes.name,
+             involved_companies.company.name,
+             involved_companies.developer,
+             involved_companies.publisher,
+             similar_games.name,
+             similar_games.slug,
+             similar_games.cover.url,
+             similar_games.genres.name,
+             collection.name,
+             franchises.name,
+             rating, rating_count;
+      where id = ${igdbId};
       limit 1;
     `
   )
@@ -110,5 +134,21 @@ export async function getIGDBGameById(id: number): Promise<IGDBGame | null> {
     cover: game.cover
       ? { ...game.cover, url: game.cover.url.replace('t_thumb', 't_cover_big') }
       : undefined,
+    screenshots: (game.screenshots ?? []).map(s => ({
+      ...s,
+      url: s.url
+        .replace('t_thumb', 't_screenshot_big')
+        .replace('//', 'https://'),
+    })),
+    similar_games: (game.similar_games ?? []).map(sg => ({
+      ...sg,
+      cover: sg.cover
+        ? { ...sg.cover, url: sg.cover.url.replace('t_thumb', 't_cover_big').replace('//', 'https://') }
+        : undefined,
+    })),
   }
+}
+
+export async function getIGDBGameById(id: number): Promise<IGDBGame | null> {
+  return getIGDBGameDetails(id)
 }

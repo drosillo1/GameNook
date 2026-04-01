@@ -6,24 +6,25 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import ReviewForm from '@/components/ReviewForm'
 import ReviewCard from '@/components/ReviewCard'
-import { Calendar, Tag, Monitor, ChevronLeft } from 'lucide-react'
+import { Calendar, Monitor, ChevronLeft } from 'lucide-react'
 import CollectionButton from '@/components/CollectionButton'
 import { RatingIcon } from '@/components/RatingIcon'
-import { getRatingData, getRatingBarColor, getRatingChipClass } from '@/lib/rating'
+import { getRatingData, getRatingBarColor } from '@/lib/rating'
+import IGDBGameDetails from '@/components/IGDBGameDetails'
 
-// ── Tipos ──────────────────────────────────────────────────────
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
 }
 
-// ── Data ───────────────────────────────────────────────────────
 async function getGame(slug: string) {
   return prisma.game.findUnique({
     where: { slug },
     include: {
       reviews: {
         include: {
-          user: { select: { id: true, name: true, email: true, image: true, avatar: true } },
+          user: {
+            select: { id: true, name: true, email: true, image: true, avatar: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
       },
@@ -40,22 +41,23 @@ function calcStats(reviews: any[]) {
   return { average: sum / total, total, distribution }
 }
 
-// ── Page ───────────────────────────────────────────────────────
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
-  const { slug }  = await params          // Next.js 15: params es async
-  const session   = await getServerSession(authOptions)
-  const game      = await getGame(slug)
+  const { slug }   = await params
+  const session    = await getServerSession(authOptions)
+  const game       = await getGame(slug)
   if (!game) notFound()
 
   const stats      = calcStats(game.reviews)
-  const userReview = session ? game.reviews.find(r => r.userId === session.user?.id) : null
+  const userReview = session
+    ? game.reviews.find(r => r.userId === session.user?.id)
+    : null
   const ratingData = getRatingData(Math.round(stats.average) || 5)
 
   return (
     <div className="min-h-screen bg-gn-bg font-body">
       <div className="max-w-7xl mx-auto px-6 py-10">
 
-        {/* Back link */}
+        {/* ── Back ── */}
         <Link
           href="/games"
           className="inline-flex items-center gap-1.5 text-gn-muted hover:text-gn-text
@@ -66,33 +68,39 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
         </Link>
 
         {/* ── HERO ── */}
-        <div className="grid md:grid-cols-[280px_1fr] bg-gn-card border border-white/[0.06]
+        <div className="grid md:grid-cols-[240px_1fr] bg-gn-card border border-white/[0.06]
                         rounded-2xl overflow-hidden mb-8">
 
-          {/* Imagen */}
-          <div className="bg-gn-surface flex items-center justify-center min-h-[260px]">
-            {game.imageUrl ? (
-              <img
-                src={game.imageUrl}
-                alt={game.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-2 text-gn-muted">
-                <span className="text-5xl">🎮</span>
-                <span className="text-xs uppercase tracking-widest">Sin imagen</span>
-              </div>
-            )}
+          {/* Portada — ratio 3:4 correcto para covers de juegos */}
+          <div className="relative bg-gn-surface">
+            <div className="aspect-[3/4] w-full">
+              {game.imageUrl ? (
+                <img
+                  src={game.imageUrl}
+                  alt={game.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center
+                                justify-center gap-2 text-gn-muted">
+                  <span className="text-5xl">🎮</span>
+                  <span className="text-xs uppercase tracking-widest">Sin imagen</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Info */}
-          <div className="p-8 flex flex-col gap-4">
+          <div className="p-8 flex flex-col gap-4 min-w-0">
+
             <div>
-              <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">
+              <p className="text-gn-primary text-xs font-semibold uppercase
+                            tracking-widest mb-1">
                 // Detalle del juego
               </p>
               <h1
-                className="font-display font-black text-3xl md:text-4xl text-gn-text leading-tight"
+                className="font-display font-black text-3xl md:text-4xl
+                           text-gn-text leading-tight"
                 style={{ textShadow: '0 0 30px rgba(230,57,70,0.2)' }}
               >
                 {game.title}
@@ -108,9 +116,12 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 </span>
               )}
               {game.platform.length > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <Monitor className="w-3.5 h-3.5" />
-                  {game.platform.join(' · ')}
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <Monitor className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="truncate">{game.platform.slice(0, 4).join(' · ')}</span>
+                  {game.platform.length > 4 && (
+                    <span className="text-gn-subtle">+{game.platform.length - 4}</span>
+                  )}
                 </span>
               )}
             </div>
@@ -122,30 +133,38 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                   <span
                     key={g}
                     className="px-2.5 py-1 bg-gn-primary/8 border border-gn-primary/20
-                               text-red-300 text-xs font-semibold uppercase tracking-wide rounded"
+                               text-red-300 text-xs font-semibold uppercase
+                               tracking-wide rounded"
                   >
                     {g}
                   </span>
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-3 flex-wrap">
+
+            {/* Botón colección */}
+            <div>
               <CollectionButton gameId={game.id} />
             </div>
 
+            {/* Descripción */}
             {game.description && (
-              <p className="text-gn-muted text-sm leading-relaxed">{game.description}</p>
+              <p className="text-gn-muted text-sm leading-relaxed line-clamp-4">
+                {game.description}
+              </p>
             )}
 
-            {/* Score block */}
-            <div className="mt-auto bg-gn-primary/5 border border-gn-primary/15 rounded-xl p-4
-                            flex items-center gap-6 flex-wrap">
+            {/* ── Score block ── */}
+            <div className="mt-auto bg-gn-primary/5 border border-gn-primary/15
+                            rounded-xl p-4 flex items-center gap-6 flex-wrap">
+
               {/* Número + label */}
-              <div>
+              <div className="flex-shrink-0">
                 <div className="flex items-baseline gap-1.5">
                   <span
                     className="font-display font-black text-5xl text-gn-primary"
-                    style={{ textShadow: '0 0 20px rgba(230,57,70,0.4)' }}
+                    style={{ textShadow: '0 0 20px rgba(230,57,70,0.4)',
+                             fontFamily: 'Orbitron, monospace' }}
                   >
                     {stats.average > 0 ? stats.average.toFixed(1) : '—'}
                   </span>
@@ -153,8 +172,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                     <span className="text-gn-muted text-lg">/10</span>
                   )}
                 </div>
-                <div className={`text-sm font-semibold uppercase tracking-wider mt-0.5 flex items-center gap-1.5 ${ratingData.tailwind}`}>
-                  <RatingIcon iconName={ratingData.iconName as any} size={20} />
+                <div className={`text-sm font-semibold uppercase tracking-wider
+                                 mt-0.5 flex items-center gap-1.5 ${ratingData.tailwind}`}>
+                  <RatingIcon iconName={ratingData.iconName as any} size={18} />
                   {stats.average > 0 ? ratingData.label : 'Sin reseñas'}
                 </div>
                 <div className="text-gn-muted text-xs mt-0.5">
@@ -162,15 +182,17 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 </div>
               </div>
 
-              {/* Barra */}
+              {/* Barra de progreso */}
               {stats.average > 0 && (
-                <div className="flex-1 min-w-[120px]">
+                <div className="flex-1 min-w-[100px]">
                   <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{
-                        width: `${(stats.average / 10) * 100}%`,
-                        background: `linear-gradient(90deg, ${getRatingBarColor(Math.round(stats.average))}99, ${getRatingBarColor(Math.round(stats.average))})`,
+                        width:      `${(stats.average / 10) * 100}%`,
+                        background: `linear-gradient(90deg,
+                          ${getRatingBarColor(Math.round(stats.average))}99,
+                          ${getRatingBarColor(Math.round(stats.average))})`,
                       }}
                     />
                   </div>
@@ -179,18 +201,22 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
               {/* Distribución */}
               {stats.total > 0 && (
-                <div className="hidden lg:block space-y-0.5">
+                <div className="hidden lg:block space-y-0.5 flex-shrink-0">
                   {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(r => {
-                    const pct = stats.total > 0 ? (stats.distribution[r - 1] / stats.total) * 100 : 0
+                    const pct = (stats.distribution[r - 1] / stats.total) * 100
                     return (
                       <div key={r} className="flex items-center gap-2">
-                        <span className="font-display text-[10px] font-bold text-gn-muted w-5 text-right">
+                        <span className="font-display text-[10px] font-bold
+                                         text-gn-muted w-5 text-right">
                           {r}
                         </span>
                         <div className="w-16 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full"
-                            style={{ width: `${pct}%`, background: getRatingBarColor(r) }}
+                            style={{
+                              width:      `${pct}%`,
+                              background:  getRatingBarColor(r),
+                            }}
                           />
                         </div>
                         <span className="text-[10px] text-gn-muted w-3">
@@ -205,13 +231,15 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           </div>
         </div>
 
-        {/* ── CONTENT GRID ── */}
-        <div className="grid lg:grid-cols-[1fr_2fr] gap-6">
+        {/* ── CONTENT GRID — formulario + reseñas ── */}
+        <div className="grid lg:grid-cols-[1fr_2fr] gap-6 mb-8">
 
-          {/* Formulario */}
+          {/* Formulario reseña */}
           <div>
-            <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 sticky top-20">
-              <h2 className="font-display font-bold text-sm tracking-wide text-gn-text mb-5">
+            <div className="bg-gn-card border border-white/[0.06] rounded-xl
+                            p-6 sticky top-20">
+              <h2 className="font-display font-bold text-sm tracking-wide
+                             text-gn-text mb-5">
                 {userReview ? 'Tu reseña' : 'Escribe una reseña'}
               </h2>
 
@@ -225,9 +253,10 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                   </p>
                   <Link
                     href="/auth/signin"
-                    className="inline-flex items-center gap-2 bg-gn-primary hover:bg-gn-primary-dark
-                               text-white text-sm font-bold uppercase tracking-wider px-5 py-2.5
-                               rounded-lg shadow-gn-red transition-all duration-200"
+                    className="inline-flex items-center gap-2 bg-gn-primary
+                               hover:bg-gn-primary-dark text-white text-sm font-bold
+                               uppercase tracking-wider px-5 py-2.5 rounded-lg
+                               shadow-gn-red transition-all duration-200"
                   >
                     ▶ Iniciar sesión
                   </Link>
@@ -236,20 +265,27 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             </div>
           </div>
 
-          {/* Reseñas */}
+          {/* Lista de reseñas */}
           <div className="bg-gn-card border border-white/[0.06] rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between px-6 py-4
+                            border-b border-white/[0.06]">
               <h2 className="font-display font-bold text-sm tracking-wide text-gn-text">
                 Reseñas de la comunidad
               </h2>
-              <span className="text-gn-muted text-xs">{stats.total} reseñas</span>
+              <span className="text-gn-muted text-xs">
+                {stats.total} {stats.total === 1 ? 'reseña' : 'reseñas'}
+              </span>
             </div>
 
             {game.reviews.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-4xl mb-3">🎮</div>
-                <p className="text-gn-text font-semibold mb-1">Aún no hay reseñas</p>
-                <p className="text-gn-muted text-sm">¡Sé el primero en compartir tu opinión!</p>
+                <p className="text-gn-text font-semibold mb-1">
+                  Aún no hay reseñas
+                </p>
+                <p className="text-gn-muted text-sm">
+                  ¡Sé el primero en compartir tu opinión!
+                </p>
               </div>
             ) : (
               <div className="divide-y divide-white/[0.04]">
@@ -265,18 +301,31 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             )}
           </div>
         </div>
+
+        {/* ── DATOS IGDB — screenshots, similares, detalles ── */}
+        {game.igdbId && (
+          <IGDBGameDetails
+            igdbId={game.igdbId}
+            gameSlug={game.slug}
+          />
+        )}
+
       </div>
     </div>
   )
 }
 
-// ── Metadata ───────────────────────────────────────────────────
 export async function generateMetadata({ params }: GameDetailPageProps) {
   const { slug } = await params
-  const game = await getGame(slug)
+  const game     = await getGame(slug)
   if (!game) return { title: 'Juego no encontrado — GameNook' }
   return {
-    title: `${game.title} — GameNook`,
+    title:       `${game.title} — GameNook`,
     description: game.description ?? `Reseñas de ${game.title} en GameNook`,
+    openGraph: {
+      title:       `${game.title} — GameNook`,
+      description: game.description ?? `Reseñas de ${game.title} en GameNook`,
+      images:       game.imageUrl ? [{ url: game.imageUrl }] : [],
+    },
   }
 }
