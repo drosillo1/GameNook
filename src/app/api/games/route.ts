@@ -1,4 +1,3 @@
-// src/app/api/games/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -62,6 +61,9 @@ export async function GET(request: NextRequest) {
 
     const gamesWithRating = games.map(game => ({
       ...game,
+      // Incluimos explícitamente o por spread
+      igdbRating:      game.igdbRating      ?? null,
+      igdbRatingCount: game.igdbRatingCount ?? null,
       averageRating: game.reviews.length > 0
         ? game.reviews.reduce((s, r) => s + r.rating, 0) / game.reviews.length
         : null,
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
       title, description, imageUrl,
       releaseDate, genre, platform,
       igdbId, descriptionModified,
+      igdbRating, igdbRatingCount // Extraídos del body
     } = body
 
     if (!title?.trim()) {
@@ -117,10 +120,6 @@ export async function POST(request: NextRequest) {
 
     const slug = await ensureUniqueSlug(generateSlug(title.trim()))
 
-    // Lógica de aprobación:
-    // - Admin/Moderador → siempre APPROVED
-    // - Juego de IGDB sin descripción modificada → APPROVED automático
-    // - Juego de IGDB con descripción modificada → PENDING (revisión)
     const status = canModerate(role)
       ? 'APPROVED'
       : descriptionModified
@@ -140,6 +139,8 @@ export async function POST(request: NextRequest) {
         status,
         submittedBy:         userId,
         descriptionModified: Boolean(descriptionModified),
+        igdbRating:          igdbRating      ?? null,
+        igdbRatingCount:     igdbRatingCount ?? null,
       },
       include: {
         reviews: { select: { rating: true } },

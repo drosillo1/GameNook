@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed:games": "tsx --env-file=.env scripts/seed-games.ts",
-    "translate:games": "tsx --env-file=.env scripts/translate-descriptions.ts"
+    "translate:games": "tsx --env-file=.env scripts/translate-descriptions.ts",
+    "update:ratings": "tsx --env-file=.env scripts/update-igdb-ratings.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

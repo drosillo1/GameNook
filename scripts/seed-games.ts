@@ -1,4 +1,3 @@
-// scripts/seed-games.ts
 import { PrismaClient } from '@prisma/client'
 import { translateToSpanish } from '../src/lib/translate'
 
@@ -9,16 +8,16 @@ const TWITCH_CLIENT_ID     = process.env.TWITCH_CLIENT_ID!
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET!
 
 const GENRES = [
-  { name: 'RPG',        igdbId: 12  },
-  { name: 'Acción',     igdbId: 4   },
-  { name: 'Aventura',   igdbId: 31  },
-  { name: 'Indie',      igdbId: 32  },
-  { name: 'Shooter',    igdbId: 5   },
-  { name: 'Estrategia', igdbId: 15  },
-  { name: 'Plataformas',igdbId: 8   },
-  { name: 'Terror',     igdbId: 19  },
-  { name: 'Deportes',   igdbId: 14  },
-  { name: 'Simulación', igdbId: 13  },
+  { name: 'RPG',         igdbId: 12  },
+  { name: 'Acción',      igdbId: 4   },
+  { name: 'Aventura',    igdbId: 31  },
+  { name: 'Indie',       igdbId: 32  },
+  { name: 'Shooter',     igdbId: 5   },
+  { name: 'Estrategia',  igdbId: 15  },
+  { name: 'Plataformas', igdbId: 8   },
+  { name: 'Terror',      igdbId: 19  },
+  { name: 'Deportes',    igdbId: 14  },
+  { name: 'Simulación',  igdbId: 13  },
 ]
 
 const GAMES_PER_GENRE = 20
@@ -116,7 +115,6 @@ async function main() {
     console.log(`   → ${games.length} juegos obtenidos de IGDB`)
 
     for (const game of games) {
-      // Saltar duplicados entre géneros
       if (seenIgdbIds.has(game.id)) {
         console.log(`   ⏭  Duplicado omitido: ${game.name}`)
         totalSkipped++
@@ -124,7 +122,6 @@ async function main() {
       }
       seenIgdbIds.add(game.id)
 
-      // Comprobar si ya existe en la BD por igdbId o título
       const existing = await prisma.game.findFirst({
         where: {
           OR: [
@@ -140,7 +137,6 @@ async function main() {
         continue
       }
 
-      // Preparar datos
       const coverUrl = game.cover?.url
         ? `https:${game.cover.url.replace('t_thumb', 't_cover_big')}`
         : null
@@ -170,7 +166,9 @@ async function main() {
             genre:       genres,
             platform:    platforms,
             igdbId:      game.id,
-            status:      'APPROVED',   // aprobados directamente
+            status:      'APPROVED',
+            igdbRating:      game.rating      ?? null,
+            igdbRatingCount: game.rating_count ?? null,
           },
         })
         console.log(`   ✅ Creado: ${game.name}`)
@@ -180,7 +178,6 @@ async function main() {
       }
     }
 
-    // Pausa entre géneros para no saturar la API de IGDB
     console.log(`   ⏳ Pausa 1.5s antes del siguiente género...`)
     await sleep(1500)
   }

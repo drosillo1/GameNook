@@ -78,6 +78,8 @@ model Game {
   submitter             User?            @relation("SubmittedGames", fields: [submittedBy], references: [id])
   collection            GameCollection[]
   reviews               Review[]
+  igdbRating            Float?
+  igdbRatingCount       Int?
 }
 
 model Review {
