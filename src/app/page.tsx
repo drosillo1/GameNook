@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { RatingSystemShowcase } from '@/components/RatingSystemShowcase'
 import HeroCharacters from '@/components/HeroCharacters'
+import { prisma } from '@/lib/prisma'
 
 const features = [
   {
@@ -30,8 +31,45 @@ const features = [
   },
 ]
 
+const ratings = [
+  { range: '1-2',  icon: '🎮', label: 'Jugable',        color: 'text-gray-400   border-gray-500/30   bg-gray-500/10'   },
+  { range: '3-4',  icon: '❤️', label: 'Entretenido',    color: 'text-blue-400   border-blue-500/30   bg-blue-500/10'   },
+  { range: '5-6',  icon: '⚡', label: 'Recomendado',    color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' },
+  { range: '7-8',  icon: '🏆', label: 'Imprescindible', color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
+  { range: '9-10', icon: '👑', label: 'Obra Maestra',   color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' },
+]
+
+// Formato compacto: 1240 → "1.2K", 135 → "135"
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`
+  return n.toString()
+}
+
+async function getStats() {
+  const [games, reviews, gamers] = await Promise.all([
+    prisma.game.count({
+      where: { status: 'APPROVED' },
+    }),
+    prisma.review.count(),
+    prisma.user.count({
+      where: { reviews: { some: {} } },
+    }),
+  ])
+  return { games, reviews, gamers }
+}
+
 export default async function Home() {
-  const session = await getServerSession(authOptions)
+  const [session, stats] = await Promise.all([
+    getServerSession(authOptions),
+    getStats(),
+  ])
+
+  const statsData = [
+    { num: formatCount(stats.games),   label: 'Juegos'  },
+    { num: formatCount(stats.reviews), label: 'Reseñas' },
+    { num: formatCount(stats.gamers),  label: 'Gamers'  },
+  ]
 
   return (
     <div className="min-h-screen bg-gn-bg font-body">
@@ -39,7 +77,6 @@ export default async function Home() {
       {/* ── HERO ── */}
       <section className="relative min-h-[85vh] flex items-center justify-center
                           text-center px-6 py-24 overflow-hidden">
-        {/* Fondos */}
         <div className="absolute inset-0 bg-gn-hero-glow" />
         <div
           className="absolute inset-0 bg-gn-grid"
@@ -49,11 +86,16 @@ export default async function Home() {
           }}
         />
 
-        {/* Personajes — solo lg+ */}
         <HeroCharacters />
 
-        {/* Contenido central */}
         <div className="relative z-10 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 bg-gn-primary/10 border
+                          border-gn-primary/30 rounded-full px-4 py-1.5 mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-gn-primary animate-pulse" />
+            <span className="text-gn-primary text-xs font-semibold tracking-widest uppercase">
+              Tu plataforma gaming
+            </span>
+          </div>
 
           <h1 className="font-display font-black text-5xl md:text-7xl leading-tight
                          tracking-tight mb-5 text-gn-text">
@@ -95,16 +137,17 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── STATS ── */}
+      {/* ── STATS reales ── */}
       <div className="bg-gn-surface border-y border-white/[0.06]">
         <div className="max-w-2xl mx-auto px-6 py-5 flex justify-center gap-16">
-          {[
-            { num: '1,240+', label: 'Juegos'  },
-            { num: '8,500+', label: 'Reseñas' },
-            { num: '3,200+', label: 'Gamers'  },
-          ].map((s) => (
+          {statsData.map((s) => (
             <div key={s.label} className="text-center">
-              <div className="font-display font-bold text-2xl text-gn-primary">{s.num}</div>
+              <div
+                className="font-display font-bold text-2xl text-gn-primary"
+                style={{ fontFamily: 'Orbitron, monospace' }}
+              >
+                {s.num}
+              </div>
               <div className="text-gn-muted text-xs uppercase tracking-widest mt-0.5">
                 {s.label}
               </div>
@@ -123,7 +166,6 @@ export default async function Home() {
             Todo en un solo lugar
           </h2>
         </div>
-
         <div className="grid md:grid-cols-3 gap-5">
           {features.map((f) => (
             <div

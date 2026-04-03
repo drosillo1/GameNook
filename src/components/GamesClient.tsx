@@ -3,24 +3,24 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { SearchIcon, XIcon, SlidersHorizontalIcon } from 'lucide-react'
+import { SearchIcon, XIcon } from 'lucide-react'
 import { translateGenre } from '@/lib/genres'
 
 // ── Tipos ──────────────────────────────────────────────────────
 interface Game {
-  id:            string
-  title:         string
-  slug:          string
-  description:   string | null
-  imageUrl:      string | null
-  releaseDate:   string | null
-  genre:         string[]
-  platform:      string[]
-  averageRating: number | null
-  igdbRating:    number | null
+  id:              string
+  title:           string
+  slug:            string
+  description:     string | null
+  imageUrl:        string | null
+  releaseDate:     string | null
+  genre:           string[]
+  platform:        string[]
+  averageRating:   number | null
+  igdbRating:      number | null
   igdbRatingCount: number | null
-  createdAt:     string
-  _count:        { reviews: number }
+  createdAt:       string
+  _count:          { reviews: number }
 }
 
 interface FilterOptions {
@@ -66,8 +66,8 @@ const RATING_META: Record<number, { icon: string; label: string; color: string }
   0:  { icon: '🎮', label: 'Cualquiera',     color: 'text-gn-muted'    },
   3:  { icon: '❤️', label: 'Entretenido+',   color: 'text-blue-400'    },
   5:  { icon: '⚡', label: 'Recomendado+',   color: 'text-purple-400'  },
-  7:  { icon: '🏆', label: 'Muy bueno',color: 'text-orange-400'  },
-  9:  { icon: '👑', label: 'Imprescidible',   color: 'text-yellow-400'  },
+  7:  { icon: '🏆', label: 'Muy bueno',      color: 'text-orange-400'  },
+  9:  { icon: '👑', label: 'Imprescindible', color: 'text-yellow-400'  },
 }
 
 function getRatingMeta(rating: number | null) {
@@ -77,6 +77,30 @@ function getRatingMeta(rating: number | null) {
   if (rating >= 5)  return { icon: '⚡', color: '#a855f7' }
   if (rating >= 3)  return { icon: '❤️', color: '#3b82f6' }
   return               { icon: '🎮', color: '#6b7280' }
+}
+
+// ── Algoritmo de popularidad ───────────────────────────────────
+function popularityScore(game: Game): number {
+  const rating = game.igdbRating      ?? 0   // 0–100
+  const count  = game.igdbRatingCount ?? 0
+  const now    = Date.now()
+
+  // 1. Calidad (40%)
+  const qualityScore = rating / 100
+
+  // 2. Popularidad real (35%) - log10(100.000) = 5 como techo
+  const popRaw = count > 0 ? Math.log10(count + 1) : 0
+  const popScore = Math.min(popRaw / 5, 1)
+
+  // 3. Recencia (25%)
+  let recencyScore = 0.5
+  if (game.releaseDate) {
+    const releaseMs = new Date(game.releaseDate).getTime()
+    const ageYears  = (now - releaseMs) / (1000 * 60 * 60 * 24 * 365)
+    recencyScore = 1 / (1 + ageYears * 0.08)
+  }
+
+  return (qualityScore * 0.40) + (popScore * 0.35) + (recencyScore * 0.25)
 }
 
 // ── GameCard ───────────────────────────────────────────────────
@@ -106,13 +130,12 @@ function GameCard({ game }: { game: Game }) {
           </div>
         )}
 
-        {/* Rating badge */}
         <div
           className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1
                      rounded-md border text-xs font-bold backdrop-blur-sm bg-gn-bg/80"
           style={{
             borderColor: `${meta.color}40`,
-            color:        meta.color,
+            color:       meta.color,
           }}
         >
           {game.averageRating ? (
@@ -161,17 +184,17 @@ function GameCard({ game }: { game: Game }) {
 
 // ── Sidebar ────────────────────────────────────────────────────
 interface SidebarProps {
-  sortBy:          SortKey
-  setSortBy:       (v: SortKey) => void
-  minRating:       number
-  setMinRating:    (v: number) => void
-  selectedGenres:  string[]
-  toggleGenre:     (g: string) => void
-  selectedYears:   string[]
-  toggleYear:      (y: string) => void
-  onReset:         () => void
-  hasActiveFilters:boolean
-  filterOptions:   FilterOptions
+  sortBy:           SortKey
+  setSortBy:        (v: SortKey) => void
+  minRating:        number
+  setMinRating:     (v: number) => void
+  selectedGenres:   string[]
+  toggleGenre:      (g: string) => void
+  selectedYears:    string[]
+  toggleYear:       (y: string) => void
+  onReset:          () => void
+  hasActiveFilters: boolean
+  filterOptions:    FilterOptions
 }
 
 function Sidebar({
@@ -245,7 +268,6 @@ function Sidebar({
           value={minRating}
           onChange={e => {
             const val = parseInt(e.target.value)
-            // Snap a los valores válidos: 0, 3, 5, 7, 9
             const snapped = [0, 3, 5, 7, 9].reduce((prev, curr) =>
               Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev
             )
@@ -309,7 +331,6 @@ function Sidebar({
         </div>
       </div>
 
-      {/* Reset */}
       {hasActiveFilters && (
         <button
           onClick={onReset}
@@ -346,7 +367,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
 
   const resetFilters = () => {
     setSearch('')
-    setSortBy('rating_desc')
+    setSortBy('popular')
     setMinRating(0)
     setSelectedGenres([])
     setSelectedYears([])
@@ -354,7 +375,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
 
   const hasActiveFilters =
     search !== '' ||
-    sortBy !== 'rating_desc' ||
+    sortBy !== 'popular' ||
     minRating > 0 ||
     selectedGenres.length > 0 ||
     selectedYears.length > 0
@@ -380,7 +401,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
       )
     }
 
-    // Géneros — AND: el juego debe tener TODOS los géneros seleccionados
+    // Géneros — AND
     if (selectedGenres.length > 0) {
       result = result.filter(g =>
         selectedGenres.every(gen => g.genre.includes(gen))
@@ -403,19 +424,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
     result.sort((a, b) => {
       switch (sortBy) {
         case 'popular':
-          // Popularidad basada en IGDB: cantidad de votos + nota.
-          const aPopularity = (a.igdbRatingCount ?? 0) + (a.igdbRating ?? 0)
-          const bPopularity = (b.igdbRatingCount ?? 0) + (b.igdbRating ?? 0)
-
-          if (bPopularity !== aPopularity) {
-            return bPopularity - aPopularity
-          }
-
-          // Uso de fallbacks por si no hay datos IGDB:
-          if (b._count.reviews !== a._count.reviews) {
-            return b._count.reviews - a._count.reviews
-          }
-          return (b.averageRating ?? -1) - (a.averageRating ?? -1)
+          return popularityScore(b) - popularityScore(a)
         case 'rating_desc':
           return (b.averageRating ?? -1) - (a.averageRating ?? -1)
         case 'reviews_desc':
@@ -441,7 +450,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
     return result
   }, [games, search, minRating, selectedGenres, selectedYears, sortBy])
 
-  // ── Active filter pills ─────────────────────────────────────
+  // ── Pills de filtros activos ─────────────────────────────────────
   const activeFilterPills = [
     ...selectedGenres.map(g => ({
       label: translateGenre(g),
@@ -459,8 +468,6 @@ export default function GamesClient({ games, filterOptions }: Props) {
 
   return (
     <div className="flex gap-6 items-start">
-
-      {/* ── Sidebar ── */}
       <div className="hidden lg:block w-52 flex-shrink-0">
         <Sidebar
           sortBy={sortBy}           setSortBy={setSortBy}
@@ -473,12 +480,8 @@ export default function GamesClient({ games, filterOptions }: Props) {
         />
       </div>
 
-      {/* ── Contenido principal ── */}
       <div className="flex-1 min-w-0">
-
-        {/* Barra superior — búsqueda + contador */}
         <div className="flex items-center gap-3 mb-4 flex-wrap">
-          {/* Búsqueda */}
           <div className="relative flex-1 min-w-[200px]">
             <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2
                                    w-4 h-4 text-gn-muted pointer-events-none" />
@@ -503,7 +506,6 @@ export default function GamesClient({ games, filterOptions }: Props) {
             )}
           </div>
 
-          {/* Contador */}
           <p className="text-gn-muted text-sm flex-shrink-0">
             <span className="text-gn-text font-semibold">{filtered.length}</span>
             {' '}de{' '}
@@ -512,7 +514,6 @@ export default function GamesClient({ games, filterOptions }: Props) {
           </p>
         </div>
 
-        {/* Pills de filtros activos */}
         {activeFilterPills.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {activeFilterPills.map(pill => (
@@ -540,7 +541,6 @@ export default function GamesClient({ games, filterOptions }: Props) {
           </div>
         )}
 
-        {/* Grid de juegos */}
         {filtered.length === 0 ? (
           <div className="text-center py-20 bg-gn-card border border-white/[0.06]
                           rounded-xl">
