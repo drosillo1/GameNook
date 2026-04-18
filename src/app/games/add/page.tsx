@@ -136,9 +136,7 @@ export default function AddGamePage() {
       ? new Date(game.first_release_date * 1000).toISOString().split('T')[0]
       : ''
 
-    const coverUrl = game.cover?.url
-      ? `https:${game.cover.url.replace('t_thumb', 't_cover_big')}`
-      : ''
+    const coverUrl = game.cover?.url ?? ''
 
     const translated = game.summary
       ? await translateToSpanish(game.summary)

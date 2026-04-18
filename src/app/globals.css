@@ -73,3 +73,15 @@ body {
   animation: mage-float 3.5s ease-in-out infinite 0.5s,
              glow-pulse  3.5s ease-in-out infinite;
 }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scroll-reviews {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reviews { animation: none; }
+}

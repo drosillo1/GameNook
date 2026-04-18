@@ -6,9 +6,15 @@ interface TwitchToken {
 
 let cachedToken: TwitchToken | null = null
 
+
 function normalizeImageUrl(url: string, size: string): string {
-  // Quita protocolo existente y añade https siempre
-  const clean = url.replace(/^https?:/, '').replace(/^\/\//, '')
+  if (!url) return ''
+
+  // Quitar cualquier protocolo existente y slashes iniciales
+  const clean = url
+    .replace(/^https?:\/\//, '')  // quita "https://" o "http://"
+    .replace(/^\/\//, '')          // quita "//"
+
   return `https://${clean}`.replace('t_thumb', size)
 }
 
@@ -88,7 +94,7 @@ export async function searchIGDBGames(query: string): Promise<IGDBGame[]> {
       search "${query}";
       fields name, slug, summary, cover.url, first_release_date,
              genres.name, platforms.name, rating, rating_count;
-      where version_parent = null;
+      where version_parent = null & cover != null;
       limit 8;
     `
   )

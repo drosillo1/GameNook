@@ -111,9 +111,7 @@ export default function IGDBSearch({ onSelect }: IGDBSearchProps) {
             const year = game.first_release_date
               ? new Date(game.first_release_date * 1000).getFullYear()
               : null
-            const coverUrl = game.cover?.url
-              ? `https:${game.cover.url}`
-              : null
+            const coverUrl = game.cover?.url ?? null
 
             return (
               <button
@@ -201,7 +199,7 @@ export default function IGDBSearch({ onSelect }: IGDBSearchProps) {
           </span>
           {selected.cover?.url && (
             <img
-              src={`https:${selected.cover.url}`}
+              src={selected.cover.url}
               alt=""
               className="w-6 h-8 object-cover rounded ml-auto"
             />

@@ -138,7 +138,7 @@ async function main() {
       }
 
       const coverUrl = game.cover?.url
-        ? `https:${game.cover.url.replace('t_thumb', 't_cover_big')}`
+        ? `https://${game.cover.url.replace(/^https?:\/\//, '').replace(/^\/\//, '').replace('t_thumb', 't_cover_big')}`
         : null
 
       const releaseDate = game.first_release_date
