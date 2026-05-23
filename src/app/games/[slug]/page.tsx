@@ -315,17 +315,58 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   )
 }
 
+// Sustituye el generateMetadata al final de src/app/games/[slug]/page.tsx
+
 export async function generateMetadata({ params }: GameDetailPageProps) {
   const { slug } = await params
   const game     = await getGame(slug)
-  if (!game) return { title: 'Juego no encontrado — GameNook' }
+
+  if (!game) {
+    return {
+      title:       'Juego no encontrado',
+      description: 'Este juego no existe en GameNook.',
+    }
+  }
+
+  const title       = game.title
+  const description = game.description
+    ? game.description.slice(0, 155).trimEnd() + (game.description.length > 155 ? '…' : '')
+    : `Reseñas y valoraciones de ${title} en GameNook. Descubre qué piensa la comunidad gamer.`
+
+  // La imagen de IGDB ya viene normalizada desde la BD (normalizeImageUrl en igdb.ts).
+  // Pedimos tamaño 720p — suficiente para OG y no excesivo.
+  const ogImage = game.imageUrl
+    ? game.imageUrl.replace('/t_cover_big/', '/t_720p/')
+    : null
+
   return {
-    title:       `${game.title} — GameNook`,
-    description: game.description ?? `Reseñas de ${game.title} en GameNook`,
+    title,
+    description,
+
+    // ── Open Graph ────────────────────────────────────────────────────
     openGraph: {
-      title:       `${game.title} — GameNook`,
-      description: game.description ?? `Reseñas de ${game.title} en GameNook`,
-      images:       game.imageUrl ? [{ url: game.imageUrl }] : [],
+      title,
+      description,
+      type:   'article',           // semánticamente correcto para una ficha de juego
+      locale: 'es_ES',
+      ...(ogImage && {
+        images: [
+          {
+            url:    ogImage,
+            width:  1280,
+            height: 720,
+            alt:    `Portada de ${title}`,
+          },
+        ],
+      }),
+    },
+
+    // ── Twitter / X ───────────────────────────────────────────────────
+    twitter: {
+      card:        ogImage ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      ...(ogImage && { images: [ogImage] }),
     },
   }
 }

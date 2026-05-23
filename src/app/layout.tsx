@@ -7,13 +7,34 @@ import { Orbitron, Rajdhani } from 'next/font/google'
 import { getCurrentYear } from '@/lib/year'
 import Toaster from '@/components/Toaster'
 
-const inter = Inter({ subsets: ['latin'] })
-const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-display', weight: ['400','700','900'] })
-const rajdhani = Rajdhani({ subsets: ['latin'], variable: '--font-body', weight: ['400','500','600'] })
+const inter     = Inter({ subsets: ['latin'] })
+const orbitron  = Orbitron({ subsets: ['latin'], variable: '--font-display', weight: ['400','700','900'] })
+const rajdhani  = Rajdhani({ subsets: ['latin'], variable: '--font-body',    weight: ['400','500','600'] })
 
 export const metadata: Metadata = {
-  title: 'GameNook - Reseñas de Videojuegos',
-  description: 'Descubre, reseña y comparte tus videojuegos favoritos con la comunidad',
+  // ── Base URL — imprescindible para que Next.js resuelva imágenes OG ──
+  metadataBase: new URL(
+    process.env.NEXTAUTH_URL ?? 'https://gamenook.es'
+  ),
+
+  // ── Básicos ──────────────────────────────────────────────────────────
+  title: {
+    default:  'GameNook — Reseñas de Videojuegos',
+    template: '%s — GameNook',          // páginas hijas solo ponen su título
+  },
+  description: 'Descubre, reseña y comparte tus videojuegos favoritos con la comunidad gamer.',
+
+  // ── Open Graph global (Twitter/LinkedIn/WhatsApp) ─────────────────
+  openGraph: {
+    siteName: 'GameNook',
+    locale:   'es_ES',
+    type:     'website',
+  },
+
+  // ── Twitter Card ──────────────────────────────────────────────────
+  twitter: {
+    card: 'summary_large_image',
+  },
 }
 
 export default function RootLayout({
