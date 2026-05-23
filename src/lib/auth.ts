@@ -175,7 +175,7 @@ export const authOptions: NextAuthOptions = {
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email }
           })
-          if (existingUser && user.image && existingUser.avatar !== user.image) {
+          if (existingUser && user.image !== user.image) {
             await prisma.user.update({
               where: { email: user.email },
               data:  { avatar: user.image, name: user.name || existingUser.name }

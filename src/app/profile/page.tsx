@@ -163,10 +163,10 @@ export default async function ProfilePage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'Jugando',     count: collectionStats.playing,    color: 'text-green-400',  dot: 'bg-green-400'  },
-              { label: 'Completados', count: collectionStats.completed,  color: 'text-purple-400', dot: 'bg-purple-400' },
-              { label: 'Pendientes',  count: collectionStats.wantToPlay, color: 'text-blue-400',   dot: 'bg-blue-400'   },
-              { label: 'Abandonados', count: collectionStats.dropped,    color: 'text-red-400',    dot: 'bg-red-400'    },
+              { label: 'Jugando',     count: collectionStats.playing,    color: 'text-green-400'},
+              { label: 'Completados', count: collectionStats.completed,  color: 'text-purple-400'},
+              { label: 'Pendientes',  count: collectionStats.wantToPlay, color: 'text-blue-400'},
+              { label: 'Abandonados', count: collectionStats.dropped,    color: 'text-red-400'},
             ].map(s => (
               <div key={s.label}
                    className="bg-gn-surface/50 rounded-lg p-3 flex items-center gap-3">

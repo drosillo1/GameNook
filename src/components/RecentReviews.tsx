@@ -79,9 +79,9 @@ function ReviewCard({ review }: { review: Review }) {
             {/* Avatar */}
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0
                             bg-gn-primary/20 flex items-center justify-center">
-              {review.user.image || review.user.avatar ? (
+              {review.user.image || review.user.image ? (
                 <img
-                  src={(review.user.image ?? review.user.avatar)!}
+                  src={(review.user.image ?? review.user.image)!}
                   alt={review.user.name ?? ''}
                   className="w-full h-full object-cover"
                 />

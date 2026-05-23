@@ -168,9 +168,9 @@ export default function ReviewCard({ review, isOwn }: ReviewCardProps) {
         <div className="flex items-center space-x-3">
           {/* Avatar */}
           <div className="w-10 h-10 rounded-full bg-gn-card border border-white/[0.06] flex items-center justify-center overflow-hidden">
-            {review.user.avatar ? (
+            {review.user.image ? (
               <img 
-                src={review.user.avatar} 
+                src={review.user.image} 
                 alt={review.user.name || review.user.username}
                 className="w-full h-full object-cover"
               />
