@@ -1,3 +1,5 @@
+// src/app/layout.tsx — versión completa con CookieBanner y enlaces legales en el footer
+
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
@@ -6,32 +8,26 @@ import Navigation from '@/components/Navigation'
 import { Orbitron, Rajdhani } from 'next/font/google'
 import { getCurrentYear } from '@/lib/year'
 import Toaster from '@/components/Toaster'
+import CookieBanner from '@/components/CookieBanner'
 
-const inter     = Inter({ subsets: ['latin'] })
-const orbitron  = Orbitron({ subsets: ['latin'], variable: '--font-display', weight: ['400','700','900'] })
-const rajdhani  = Rajdhani({ subsets: ['latin'], variable: '--font-body',    weight: ['400','500','600'] })
+const inter    = Inter({ subsets: ['latin'] })
+const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-display', weight: ['400','700','900'] })
+const rajdhani = Rajdhani({ subsets: ['latin'], variable: '--font-body',    weight: ['400','500','600'] })
 
 export const metadata: Metadata = {
-  // ── Base URL — imprescindible para que Next.js resuelva imágenes OG ──
   metadataBase: new URL(
     process.env.NEXTAUTH_URL ?? 'https://gamenook.es'
   ),
-
-  // ── Básicos ──────────────────────────────────────────────────────────
   title: {
     default:  'GameNook — Reseñas de Videojuegos',
-    template: '%s — GameNook',          // páginas hijas solo ponen su título
+    template: '%s — GameNook',
   },
   description: 'Descubre, reseña y comparte tus videojuegos favoritos con la comunidad gamer.',
-
-  // ── Open Graph global (Twitter/LinkedIn/WhatsApp) ─────────────────
   openGraph: {
     siteName: 'GameNook',
     locale:   'es_ES',
     type:     'website',
   },
-
-  // ── Twitter Card ──────────────────────────────────────────────────
   twitter: {
     card: 'summary_large_image',
   },
@@ -50,24 +46,52 @@ export default function RootLayout({
         <Providers>
           <Navigation />
           <main>{children}</main>
+
           <footer className="bg-gn-bg border-t border-white/[0.06]">
             <div className="max-w-6xl mx-auto py-8 px-6">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+
                 <div className="text-center md:text-left">
                   <p className="text-gn-text text-sm">
-                    © {year} <span className="font-bold text-gn-primary">GameNook</span>
+                    © {year}{' '}
+                    <span className="font-bold text-gn-primary">GameNook</span>
                   </p>
                   <p className="text-gn-muted text-xs mt-1">
-                    Todos los derechos reservados
+                    Hecho por gamers, para gamers
                   </p>
                 </div>
-                <div className="flex items-center gap-6 text-xs text-gn-muted">
-                  <span>Hecho por gamers, para gamers</span>
-                </div>
+
+                {/* ── Enlaces legales ── */}
+                <nav className="flex items-center gap-4 text-xs text-gn-muted">
+                  <a
+                    href="/legal/aviso-legal"
+                    className="hover:text-gn-text transition-colors"
+                  >
+                    Aviso legal
+                  </a>
+                  <span className="text-white/[0.08]">·</span>
+                  <a
+                    href="/legal/privacidad"
+                    className="hover:text-gn-text transition-colors"
+                  >
+                    Privacidad
+                  </a>
+                  <span className="text-white/[0.08]">·</span>
+                  <a
+                    href="/legal/cookies"
+                    className="hover:text-gn-text transition-colors"
+                  >
+                    Cookies
+                  </a>
+                </nav>
+
               </div>
             </div>
           </footer>
         </Providers>
+
+        {/* Banner de cookies — fuera de Providers para evitar flash en SSR */}
+        <CookieBanner />
         <Toaster />
       </body>
     </html>

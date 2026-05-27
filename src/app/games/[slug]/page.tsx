@@ -315,8 +315,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   )
 }
 
-// Sustituye el generateMetadata al final de src/app/games/[slug]/page.tsx
-
 export async function generateMetadata({ params }: GameDetailPageProps) {
   const { slug } = await params
   const game     = await getGame(slug)
