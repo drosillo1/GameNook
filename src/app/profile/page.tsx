@@ -77,7 +77,7 @@ export default async function ProfilePage() {
           {user.image ? (
             <img
               src={user.image}
-              alt={user.name ?? 'Avatar'}
+              alt={user.name ?? 'image'}
               className="w-20 h-20 rounded-full object-cover ring-2 ring-gn-primary/30"
             />
           ) : (

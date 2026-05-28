@@ -24,7 +24,7 @@ export async function GET(
             id: true,
             name: true,
             username: true,
-            avatar: true,
+            image: true,
           },
         },
         game: {
@@ -126,7 +126,7 @@ export async function PUT(
             id: true,
             name: true,
             username: true,
-            avatar: true,
+            image: true,
           },
         },
         game: {

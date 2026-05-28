@@ -89,7 +89,7 @@ export default function Navigation() {
                 {session.user?.image ? (
                   <img
                     src={session.user.image}
-                    alt="avatar"
+                    alt="image"
                     width={24}
                     height={24}
                     className="rounded-full w-6 h-6 object-cover"

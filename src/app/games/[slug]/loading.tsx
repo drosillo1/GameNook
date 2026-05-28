@@ -99,7 +99,7 @@ function ReviewCardSkeleton() {
   return (
     <div className="px-6 py-5">
       <div className="flex items-start gap-3">
-        {/* Avatar */}
+        {/* image */}
         <SkeletonPulse className="h-8 w-8 rounded-full flex-shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">

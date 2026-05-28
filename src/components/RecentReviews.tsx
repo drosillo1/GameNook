@@ -28,7 +28,7 @@ interface Review {
   user: {
     name:   string | null
     image:  string | null
-    avatar: string | null
+    image: string | null
   }
 }
 
@@ -76,7 +76,7 @@ function ReviewCard({ review }: { review: Review }) {
         {/* Usuario + rating */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            {/* Avatar */}
+            {/* image */}
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0
                             bg-gn-primary/20 flex items-center justify-center">
               {review.user.image || review.user.image ? (

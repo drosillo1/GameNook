@@ -4,7 +4,7 @@ CREATE TABLE "public"."users" (
     "email" TEXT NOT NULL,
     "username" TEXT NOT NULL,
     "name" TEXT,
-    "avatar" TEXT,
+    "image" TEXT,
     "bio" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

@@ -17,7 +17,7 @@ interface Review {
     id: string
     name: string | null
     username: string
-    avatar: string | null
+    image: string | null
   }
 }
 
@@ -166,7 +166,7 @@ export default function ReviewCard({ review, isOwn }: ReviewCardProps) {
 
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-3">
-          {/* Avatar */}
+          {/* image */}
           <div className="w-10 h-10 rounded-full bg-gn-card border border-white/[0.06] flex items-center justify-center overflow-hidden">
             {review.user.image ? (
               <img 

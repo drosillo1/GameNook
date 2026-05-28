@@ -12,7 +12,7 @@
   - You are about to drop the column `userId` on the `reviews` table. All the data in the column will be lost.
   - You are about to drop the column `sessionToken` on the `sessions` table. All the data in the column will be lost.
   - You are about to drop the column `userId` on the `sessions` table. All the data in the column will be lost.
-  - You are about to drop the column `avatar` on the `users` table. All the data in the column will be lost.
+  - You are about to drop the column `image` on the `users` table. All the data in the column will be lost.
   - You are about to drop the column `createdAt` on the `users` table. All the data in the column will be lost.
   - You are about to drop the column `updatedAt` on the `users` table. All the data in the column will be lost.
   - A unique constraint covering the columns `[provider,provider_account_id]` on the table `accounts` will be added. If there are existing duplicate values, this will fail.
@@ -80,7 +80,7 @@ ADD COLUMN     "session_token" TEXT NOT NULL,
 ADD COLUMN     "user_id" TEXT NOT NULL;
 
 -- AlterTable
-ALTER TABLE "public"."users" DROP COLUMN "avatar",
+ALTER TABLE "public"."users" DROP COLUMN "image",
 DROP COLUMN "createdAt",
 DROP COLUMN "updatedAt",
 ADD COLUMN     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

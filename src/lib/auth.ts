@@ -164,7 +164,7 @@ export const authOptions: NextAuthOptions = {
       if (session?.user && user) {
         session.user.id   = user.id
         session.user.role = (user as any).role ?? 'USER'
-        session.user.image = (user as any).avatar || session.user.image
+        session.user.image = (user as any).image || session.user.image
       }
       return session
     },
@@ -178,7 +178,7 @@ export const authOptions: NextAuthOptions = {
           if (existingUser && user.image !== user.image) {
             await prisma.user.update({
               where: { email: user.email },
-              data:  { avatar: user.image, name: user.name || existingUser.name }
+              data:  { image: user.image, name: user.name || existingUser.name }
             })
           }
           return true
