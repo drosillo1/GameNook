@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { CalendarIcon } from 'lucide-react'
 import { RatingBadge } from '@/components/RatingBadge'
 import { RatingDistribution } from '@/components/RatingDistribution'
+import { GamepadIcon, MailIcon } from 'lucide-react'
 
 async function getUserData(userId: string) {
   return prisma.user.findUnique({
