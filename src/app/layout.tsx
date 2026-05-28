@@ -90,11 +90,11 @@ export default function RootLayout({
               </div>
             </div>
           </footer>
+          <Toaster />
         </Providers>
 
         {/* Banner de cookies — fuera de Providers para evitar flash en SSR */}
         <CookieBanner />
-        <Toaster />
         
         {/* Vercel Analytics tracking script */}
         <Analytics />

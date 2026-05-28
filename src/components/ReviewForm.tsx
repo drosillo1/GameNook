@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import RatingGaming from './RatingGaming'
+import { toast } from '@/lib/toast'
 
 interface ReviewFormProps {
   gameId: string
@@ -45,7 +46,8 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
     setIsSubmitting(true)
     try {
       await fetch(`/api/reviews/${existingReview.id}`, { method: 'DELETE' })
-      router.refresh()
+      toast.success('Reseña eliminada correctamente')
+      setTimeout(() => router.refresh(), 200)
     } catch {
       setError('Error al eliminar la reseña.')
     } finally {

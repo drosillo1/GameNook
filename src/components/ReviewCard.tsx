@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { EditIcon, TrashIcon, MoreVerticalIcon } from 'lucide-react'
 import { PxlKitIcon } from '@pxlkit/core'
 import { Crown, Trophy, Medal, Shield, Heart, Sword } from '@pxlkit/gamification'
+import { toast } from '@/lib/toast'
 
 interface Review {
   id: string
@@ -119,7 +120,8 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
 
       setIsEditing(false)
       setError('')
-      router.refresh()
+      toast.success('Reseña actualizada correctamente')
+      setTimeout(() => router.refresh(), 200)
     } catch (error) {
       console.error('Error:', error)
       setError(error instanceof Error ? error.message : 'Error desconocido')
@@ -143,9 +145,11 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
         throw new Error(errorData.error || 'Error al eliminar la reseña')
       }
 
-      router.refresh()
+      toast.success('Reseña eliminada correctamente')
+      setTimeout(() => router.refresh(), 100)
     } catch (error) {
       console.error('Error:', error)
+      toast.error(error instanceof Error ? error.message : 'Error al eliminar la reseña')
       setError(error instanceof Error ? error.message : 'Error desconocido')
       setIsDeleting(false)
     }

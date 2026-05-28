@@ -244,7 +244,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               </h2>
 
               {session ? (
-                <ReviewForm gameId={game.id} existingReview={userReview} />
+                <ReviewForm key={userReview?.id ?? 'new'} gameId={game.id} existingReview={userReview} />
               ) : (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-3">🎮</div>
