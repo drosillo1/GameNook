@@ -543,21 +543,38 @@ export default function GamesClient({ games, filterOptions }: Props) {
 
         {filtered.length === 0 ? (
           <div className="text-center py-20 bg-gn-card border border-white/[0.06]
-                          rounded-xl">
+                  rounded-xl">
             <div className="text-5xl mb-4">🎮</div>
             <h3 className="font-display font-bold text-xl text-gn-text mb-2">
               Sin resultados
             </h3>
             <p className="text-gn-muted text-sm mb-6 max-w-xs mx-auto">
-              Ningún juego coincide con los filtros aplicados
+              {search.trim()
+                ? <>¿No encuentras <span className="text-gn-text font-semibold">"{search}"</span>? Puedes añadirlo al catálogo.</>
+                : 'Ningún juego coincide con los filtros aplicados.'
+              }
             </p>
-            <button
-              onClick={resetFilters}
-              className="text-gn-primary hover:text-gn-primary-dark text-sm
-                         font-semibold uppercase tracking-wide transition-colors"
-            >
-              Limpiar filtros
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              {search.trim() && (
+                <Link
+                  href={`/games/add?q=${encodeURIComponent(search.trim())}`}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gn-primary
+                     hover:bg-gn-primary-dark text-white text-sm font-bold
+                     uppercase tracking-wide rounded-lg transition-colors"
+                >
+                  <span>＋</span> Añadir juego
+                </Link>
+              )}
+              {hasActiveFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="text-gn-primary hover:text-gn-primary-dark text-sm
+                     font-semibold uppercase tracking-wide transition-colors"
+                >
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3
