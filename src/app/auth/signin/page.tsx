@@ -1,12 +1,12 @@
-// src/app/auth/signin/page.tsx
 "use client"
 
 import { signIn, getSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { GamepadIcon, MailIcon, LoaderIcon } from "lucide-react"
 
-export default function SignIn() {
+// 1. Movemos toda tu lógica y UI a un componente interno
+function SignInForm() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false)
@@ -114,7 +114,6 @@ export default function SignIn() {
           )}
 
           {emailSent ? (
-            /* Confirmación inline si el usuario ya envió el email */
             <div className="text-center py-4">
               <div className="w-12 h-12 bg-gn-primary/10 border border-gn-primary/20
                               rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -134,7 +133,7 @@ export default function SignIn() {
             </div>
           ) : (
             <>
-              {/* ── Google ── */}
+              {/* Google */}
               <button
                 onClick={handleGoogleSignIn}
                 disabled={isLoadingGoogle || isLoadingEmail}
@@ -158,16 +157,13 @@ export default function SignIn() {
                 Continuar con Google
               </button>
 
-              {/* Separador */}
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex-1 h-px bg-white/[0.06]" />
-                <span className="text-gn-subtle text-xs uppercase tracking-widest">
-                  o
-                </span>
+                <span className="text-gn-subtle text-xs uppercase tracking-widest">o</span>
                 <div className="flex-1 h-px bg-white/[0.06]" />
               </div>
 
-              {/* ── Email magic link ── */}
+              {/* Email Magic Link */}
               <form onSubmit={handleEmailSignIn} className="space-y-3">
                 <div>
                   <label className="block text-gn-muted text-xs font-semibold
@@ -227,5 +223,17 @@ export default function SignIn() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignIn() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gn-bg flex items-center justify-center">
+        <LoaderIcon className="w-8 h-8 text-gn-primary animate-spin" />
+      </div>
+    }>
+      <SignInForm />
+    </Suspense>
   )
 }
