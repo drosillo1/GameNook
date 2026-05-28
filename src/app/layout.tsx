@@ -1,7 +1,8 @@
-// src/app/layout.tsx — versión completa con CookieBanner y enlaces legales en el footer
+// src/app/layout.tsx — versión completa con CookieBanner, enlaces legales y Vercel Analytics
 
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+// @ts-ignore: side-effect import of global CSS may not have module declarations in this TS setup
 import './globals.css'
 import { Providers } from './providers'
 import Navigation from '@/components/Navigation'
@@ -9,6 +10,7 @@ import { Orbitron, Rajdhani } from 'next/font/google'
 import { getCurrentYear } from '@/lib/year'
 import Toaster from '@/components/Toaster'
 import CookieBanner from '@/components/CookieBanner'
+import { Analytics } from '@vercel/analytics/react' // <-- Importamos las analíticas de Vercel
 
 const inter    = Inter({ subsets: ['latin'] })
 const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-display', weight: ['400','700','900'] })
@@ -93,6 +95,9 @@ export default function RootLayout({
         {/* Banner de cookies — fuera de Providers para evitar flash en SSR */}
         <CookieBanner />
         <Toaster />
+        
+        {/* Vercel Analytics tracking script */}
+        <Analytics />
       </body>
     </html>
   )
