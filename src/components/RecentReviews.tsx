@@ -28,7 +28,6 @@ interface Review {
   user: {
     name:   string | null
     image:  string | null
-    image: string | null
   }
 }
 

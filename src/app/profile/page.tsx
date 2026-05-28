@@ -171,7 +171,6 @@ export default async function ProfilePage() {
             ].map(s => (
               <div key={s.label}
                    className="bg-gn-surface/50 rounded-lg p-3 flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
                 <div>
                   <div className={`font-display font-black text-xl ${s.color}`}>{s.count}</div>
                   <div className="text-gn-muted text-[11px] uppercase tracking-wide mt-0.5">

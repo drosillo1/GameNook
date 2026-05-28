@@ -15,7 +15,7 @@ export default function IGDBSearch({ onSelect }: IGDBSearchProps) {
   const [loading, setLoading] = useState(false)
   const [open,    setOpen]    = useState(false)
   const [selected, setSelected] = useState<IGDBGame | null>(null)
-  const debounceRef = useRef<NodeJS.Timeout>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wrapperRef  = useRef<HTMLDivElement>(null)
 
   // Cerrar al hacer click fuera
@@ -37,7 +37,7 @@ export default function IGDBSearch({ onSelect }: IGDBSearchProps) {
       return
     }
 
-    clearTimeout(debounceRef.current)
+    clearTimeout(debounceRef.current || undefined)
     debounceRef.current = setTimeout(async () => {
       setLoading(true)
       try {
@@ -52,7 +52,7 @@ export default function IGDBSearch({ onSelect }: IGDBSearchProps) {
       }
     }, 400)
 
-    return () => clearTimeout(debounceRef.current)
+    return () => clearTimeout(debounceRef.current || undefined)
   }, [query])
 
   const handleSelect = async (game: IGDBGame) => {

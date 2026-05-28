@@ -249,7 +249,7 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
               const iconData = IconIcons[rating as keyof typeof IconIcons]
               const isActive = rating <= editRating
               const isExact = rating === editRating
-              
+
               return (
                 <button
                   key={rating}
@@ -257,12 +257,11 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
                   onClick={() => setEditRating(rating)}
                   onMouseEnter={() => setHoveredRating(rating)}
                   onMouseLeave={() => setHoveredRating(0)}
-                  className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg border transition-all ${
-                    isActive
+                  className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg border transition-all ${isActive
                       ? 'bg-white/10 border-white/20 text-white'
                       : 'bg-white/5 border-white/10 text-gn-muted hover:border-white/15'
-                  } ${isExact ? 'ring-1 ring-offset-1 ring-offset-gn-card' : ''}`}
-                  style={isExact ? { ringColor: meta.color } : {}}
+                    } ${isExact ? 'ring-1 ring-offset-1 ring-offset-gn-card ring-[var(--ring-color)]' : ''}`}
+                  style={isExact ? { ['--ring-color' as any]: meta.color } : {}}
                 >
                   <PxlKitIcon icon={iconData} size={18} />
                   <span className="text-xs font-bold">{rating}</span>

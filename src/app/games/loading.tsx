@@ -1,9 +1,10 @@
 // src/app/games/loading.tsx
 
-function SkeletonPulse({ className }: { className?: string }) {
+function SkeletonPulse({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <div
       className={`animate-pulse rounded bg-white/[0.06] ${className ?? ''}`}
+      style={style}
     />
   )
 }

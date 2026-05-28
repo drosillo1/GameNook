@@ -116,9 +116,9 @@ export default function RatingGaming({ value, onChange, disabled = false }: Rati
                   ? `${m.chipClass} shadow-sm`
                   : 'bg-white/[0.02] border-white/[0.06] text-gn-muted hover:border-white/15'
                 }
-                ${isExact && !hovered ? 'ring-1 ring-offset-1 ring-offset-gn-card' : ''}
+                ${isExact && !hovered ? 'ring-1 ring-offset-1 ring-offset-gn-card ring-[var(--ring-color)]' : ''}
               `}
-              style={isExact && !hovered ? { ringColor: m.color } : {}}
+              style={isExact && !hovered ? { ['--ring-color' as any]: m.color } : {}}
             >
               <PxlKitIcon icon={iconData} size={24} />
               <span
