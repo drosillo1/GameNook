@@ -23,7 +23,8 @@ interface Review {
 
 interface ReviewCardProps {
   review: Review
-  isOwn: boolean
+  currentUserId?: string
+  isOwn?: boolean
 }
 
 const IconIcons = {
@@ -82,7 +83,8 @@ function formatRelativeTime(dateString: string) {
   })
 }
 
-export default function ReviewCard({ review, isOwn }: ReviewCardProps) {
+export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: ReviewCardProps) {
+  const isOwn = isOwnProp ?? (currentUserId !== undefined && currentUserId === review.user.id)
   const router = useRouter()
   const [showMenu, setShowMenu] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
