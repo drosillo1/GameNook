@@ -60,7 +60,7 @@ async function getRecentReviews() {
     },
     include: {
       game: { select: { title: true, slug: true, imageUrl: true } },
-      user: { select: { name: true, image: true, image: true } },
+      user: { select: { name: true, image: true } },
     },
     orderBy: { createdAt: 'desc' },
     take: 12,

@@ -23,7 +23,7 @@ async function getGame(slug: string) {
       reviews: {
         include: {
           user: {
-            select: { id: true, name: true, email: true, image: true, image: true },
+            select: { id: true, name: true, email: true, image: true },
           },
         },
         orderBy: { createdAt: 'desc' },
