@@ -4,14 +4,20 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+type RouteParams = {
+  params: Promise<{ id: string }>
+}
+
 // GET - Obtener reseña específica
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams 
 ) {
   try {
+    const { id } = await params;
+
     const review = await prisma.review.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         user: {
           select: {
@@ -51,9 +57,10 @@ export async function GET(
 // PUT - Actualizar reseña
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions)
     
     if (!session || !session.user?.email) {
@@ -88,7 +95,7 @@ export async function PUT(
 
     // Buscar la reseña y verificar que pertenece al usuario
     const existingReview = await prisma.review.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     if (!existingReview) {
@@ -107,7 +114,7 @@ export async function PUT(
 
     // Actualizar la reseña
     const updatedReview = await prisma.review.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         rating,
         content: content?.trim() || null,
@@ -145,9 +152,10 @@ export async function PUT(
 // DELETE - Eliminar reseña
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions)
     
     if (!session || !session.user?.email) {
@@ -171,7 +179,7 @@ export async function DELETE(
 
     // Buscar la reseña y verificar que pertenece al usuario
     const existingReview = await prisma.review.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     if (!existingReview) {
@@ -190,7 +198,7 @@ export async function DELETE(
 
     // Eliminar la reseña
     await prisma.review.delete({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     return NextResponse.json({ message: 'Reseña eliminada correctamente' })
