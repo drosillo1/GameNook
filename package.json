@@ -24,7 +24,7 @@
     "@pxlkit/ui": "^1.0.1",
     "@pxlkit/weather": "^1.0.1",
     "lucide-react": "^0.536.0",
-    "next": "15.4.5",
+    "next": "15.4.10",
     "next-auth": "^4.24.11",
     "nodemailer": "^7.0.13",
     "prisma": "^6.19.2",
