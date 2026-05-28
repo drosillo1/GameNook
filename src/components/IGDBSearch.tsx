@@ -2,18 +2,21 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { SearchIcon, LoaderIcon } from 'lucide-react'
 import { IGDBGame } from '@/lib/igdb'
 
 interface IGDBSearchProps {
-   onSelect: (game: IGDBGame) => Promise<void>
+  onSelect: (game: IGDBGame) => Promise<void>
 }
 
 export default function IGDBSearch({ onSelect }: IGDBSearchProps) {
-  const [query,   setQuery]   = useState('')
-  const [results, setResults] = useState<IGDBGame[]>([])
-  const [loading, setLoading] = useState(false)
-  const [open,    setOpen]    = useState(false)
+  const searchParams = useSearchParams()
+
+  const [query,    setQuery]    = useState(() => searchParams.get('q') ?? '')
+  const [results,  setResults]  = useState<IGDBGame[]>([])
+  const [loading,  setLoading]  = useState(false)
+  const [open,     setOpen]     = useState(false)
   const [selected, setSelected] = useState<IGDBGame | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wrapperRef  = useRef<HTMLDivElement>(null)
@@ -59,7 +62,7 @@ export default function IGDBSearch({ onSelect }: IGDBSearchProps) {
     setSelected(game)
     setQuery(game.name)
     setOpen(false)
-    await onSelect(game)  // ← añade await
+    await onSelect(game)
   }
 
   const handleClear = () => {
