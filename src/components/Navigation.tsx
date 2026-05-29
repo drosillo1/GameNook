@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { GamepadIcon, ChevronDownIcon, ShieldIcon, MenuIcon, XIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // ── Avatar con iniciales ───────────────────────────────────────
 function UserAvatar({ image, name, email, size = 6 }: {
@@ -13,16 +13,12 @@ function UserAvatar({ image, name, email, size = 6 }: {
   email?: string | null
   size?:  number
 }) {
-  // Inicial: primera letra del nombre, o del email, o '?'
   const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase()
-
-  // Color determinista basado en el código del carácter — siempre el mismo para el mismo usuario
   const colors = [
     '#e63946', '#f4a261', '#a855f7', '#3b82f6',
     '#10b981', '#f59e0b', '#ec4899', '#06b6d4',
   ]
   const color = colors[(initial.charCodeAt(0) ?? 0) % colors.length]
-
   const sizeClass = `w-${size} h-${size}`
 
   if (image) {
@@ -49,15 +45,28 @@ function UserAvatar({ image, name, email, size = 6 }: {
 export default function Navigation() {
   const { data: session } = useSession()
   const pathname          = usePathname()
+  const router            = useRouter()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileOpen,   setMobileOpen]   = useState(false)
+
+  // Redirigir a onboarding si el usuario no tiene nombre
+  useEffect(() => {
+    if (
+      session &&
+      !session.user?.name &&
+      pathname !== '/onboarding' &&
+      !pathname.startsWith('/auth')
+    ) {
+      router.push('/onboarding')
+    }
+  }, [session, pathname, router])
 
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'MODERATOR'
 
   const navLinks = [
-    { href: '/games',     label: 'Juegos',   always: true  },
-    { href: '/collection',label: 'Colección',always: false },
-    { href: '/games/add', label: 'Agregar',  always: false },
+    { href: '/games',      label: 'Juegos',   always: true  },
+    { href: '/collection', label: 'Colección', always: false },
+    { href: '/games/add',  label: 'Agregar',  always: false },
   ]
 
   const visibleLinks = navLinks.filter(l => l.always || session)
@@ -109,7 +118,6 @@ export default function Navigation() {
         <div className="flex items-center gap-2">
 
           {session ? (
-            /* Dropdown usuario */
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -139,7 +147,6 @@ export default function Navigation() {
                   <div className="absolute right-0 top-full mt-2 w-52 bg-gn-card border
                                   border-white/[0.08] rounded-xl overflow-hidden shadow-xl z-20">
 
-                    {/* Info usuario */}
                     <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-3">
                       <UserAvatar
                         image={session.user?.image}
@@ -213,7 +220,6 @@ export default function Navigation() {
               )}
             </div>
           ) : (
-            /* Botón entrar → página de signin (Google + magic link) */
             <Link
               href="/auth/signin"
               className="bg-gn-primary hover:bg-gn-primary-dark text-white text-sm font-bold
@@ -224,7 +230,7 @@ export default function Navigation() {
             </Link>
           )}
 
-          {/* ── Hamburguesa — solo móvil ── */}
+          {/* ── Hamburguesa ── */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg
@@ -243,18 +249,14 @@ export default function Navigation() {
       {/* ── Menú móvil ── */}
       {mobileOpen && (
         <>
-          {/* Overlay */}
           <div
             className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
             onClick={() => setMobileOpen(false)}
           />
-
-          {/* Panel */}
           <div className="absolute top-[60px] left-0 right-0 z-40 md:hidden
                           bg-gn-bg border-b border-white/[0.06] shadow-2xl">
             <nav className="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-1">
 
-              {/* Info usuario si hay sesión */}
               {session && (
                 <div className="flex items-center gap-3 px-3 py-3 mb-2
                                 bg-gn-card border border-white/[0.06] rounded-xl">
@@ -275,7 +277,6 @@ export default function Navigation() {
                 </div>
               )}
 
-              {/* Links */}
               {visibleLinks.map(l => (
                 <Link
                   key={l.href}
@@ -305,7 +306,6 @@ export default function Navigation() {
                 </Link>
               )}
 
-              {/* Divider */}
               <div className="h-px bg-white/[0.06] my-1" />
 
               {session ? (

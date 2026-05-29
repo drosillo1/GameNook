@@ -125,7 +125,6 @@ export const authOptions: NextAuthOptions = {
 
     EmailProvider({
       from: process.env.AUTH_EMAIL_FROM!,
-      // Usamos Resend via SMTP
       server: {
         host:   'smtp.resend.com',
         port:   465,
@@ -135,7 +134,6 @@ export const authOptions: NextAuthOptions = {
           pass: process.env.RESEND_API_KEY!,
         },
       },
-      // Email personalizado con nuestro template
       async sendVerificationRequest({ identifier: email, url, provider }) {
         const { host } = new URL(url)
         const transport = createTransport(provider.server)
@@ -152,9 +150,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn:     '/auth/signin',
+    signIn:        '/auth/signin',
     verifyRequest: '/auth/verify-request',
-    error:      '/auth/error',
+    error:         '/auth/error',
   },
   session: {
     strategy: "database",
@@ -162,28 +160,29 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, user }) {
       if (session?.user && user) {
-        session.user.id   = user.id
-        session.user.role = (user as any).role ?? 'USER'
+        session.user.id    = user.id
+        session.user.role  = (user as any).role  ?? 'USER'
+        session.user.name  = (user as any).name  // refresca nombre tras onboarding
         session.user.image = (user as any).image || session.user.image
       }
       return session
     },
     async signIn({ user, account }) {
-      if (account?.provider === "google") {
+      if (account?.provider === 'google') {
         try {
           if (!user.email) return false
           const existingUser = await prisma.user.findUnique({
-            where: { email: user.email }
+            where: { email: user.email },
           })
-          if (existingUser && user.image !== user.image) {
+          if (existingUser && user.image !== existingUser.image) {
             await prisma.user.update({
               where: { email: user.email },
-              data:  { image: user.image, name: user.name || existingUser.name }
+              data:  { image: user.image, name: user.name || existingUser.name },
             })
           }
           return true
         } catch (error) {
-          console.error("Error in signIn callback:", error)
+          console.error('Error in signIn callback:', error)
           return false
         }
       }

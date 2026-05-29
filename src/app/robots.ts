@@ -24,13 +24,11 @@ export default function robots(): MetadataRoute.Robots {
           '/collection',  // biblioteca personal — requiere sesión, no indexable
           '/profile',     // perfil de usuario — privado
           '/auth/',       // páginas de login — no aportan SEO
+          '/onboarding'
         ],
       },
     ],
 
-    // Le dice a todos los crawlers dónde está el sitemap.
-    // Sin esta línea, Google puede tardar semanas en encontrarlo
-    // aunque lo hayas enviado en Search Console.
     sitemap: `${baseUrl}/sitemap.xml`,
   }
 }
