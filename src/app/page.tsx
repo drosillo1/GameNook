@@ -1,9 +1,8 @@
-// src/app/page.tsx
 import Link from 'next/link'
 import { StarIcon, BookOpenIcon, UsersIcon } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { RatingSystemShowcase } from '@/components/RatingSystemShowcase'
+import { unstable_cache } from 'next/cache'
 import HeroCharacters from '@/components/HeroCharacters'
 import { prisma } from '@/lib/prisma'
 import { ScrollingText } from '@/components/ScrollingText'
@@ -42,32 +41,38 @@ const ratings = [
   { range: '9-10', icon: '👑', label: 'Obra Maestra',   color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' },
 ]
 
-// ── Data ───────────────────────────────────────────────────────
-async function getStats() {
-  const [games, reviews, gamers] = await Promise.all([
-    prisma.game.count({ where: { status: 'APPROVED' } }),
-    prisma.review.count(),
-    prisma.user.count({ where: { reviews: { some: {} } } }),
-  ])
-  return { games, reviews, gamers }
-}
+const getStats = unstable_cache(
+  async () => {
+    const [games, reviews, gamers] = await Promise.all([
+      prisma.game.count({ where: { status: 'APPROVED' } }),
+      prisma.review.count(),
+      prisma.user.count({ where: { reviews: { some: {} } } }),
+    ])
+    return { games, reviews, gamers }
+  },
+  ['home-stats'],
+  { revalidate: 300 }
+)
 
-async function getRecentReviews() {
-  return prisma.review.findMany({
-    where: {
-      content: { not: null },
-      game:    { status: 'APPROVED' },
-    },
-    include: {
-      game: { select: { title: true, slug: true, imageUrl: true } },
-      user: { select: { name: true, image: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 12,
-  })
-}
+const getRecentReviews = unstable_cache(
+  async () => {
+    return prisma.review.findMany({
+      where: {
+        content: { not: null },
+        game:    { status: 'APPROVED' },
+      },
+      include: {
+        game: { select: { title: true, slug: true, imageUrl: true } },
+        user: { select: { name: true, image: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 12,
+    })
+  },
+  ['recent-reviews'],
+  { revalidate: 120 }
+)
 
-// ── Page ───────────────────────────────────────────────────────
 export default async function Home() {
   const [session, stats, recentReviews] = await Promise.all([
     getServerSession(authOptions),
@@ -95,7 +100,6 @@ export default async function Home() {
         <HeroCharacters />
 
         <div className="relative z-10 max-w-2xl mx-auto">
-          {/* Título con texto rotante */}
           <h1
             className="font-display font-black text-5xl md:text-7xl lg:text-8xl
                        leading-[0.9] tracking-tighter mb-8 text-gn-text uppercase"
@@ -112,7 +116,6 @@ export default async function Home() {
             Una comunidad hecha por gamers, para gamers.
           </p>
 
-          {/* CTAs */}
           <div className="flex gap-3 justify-center flex-wrap">
             <Link
               href="/games"
@@ -138,7 +141,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── STATS con Counter animado ── */}
+      {/* ── STATS ── */}
       <div className="bg-gn-surface border-y border-white/[0.06]">
         <div className="max-w-2xl mx-auto px-6 py-6 flex justify-center gap-16">
           {[
@@ -161,7 +164,7 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* ── SOCIAL PROOF — Últimas reseñas ── */}
+      {/* ── SOCIAL PROOF ── */}
       {recentReviews.length >= 4 && (
         <section className="py-14 overflow-hidden">
           <div className="max-w-5xl mx-auto px-6 mb-8">
@@ -180,7 +183,6 @@ export default async function Home() {
       {/* ── CTA FINAL ── */}
       {!session && (
         <section className="relative py-24 px-6 overflow-hidden">
-          {/* Fondo con glow centrado */}
           <div
             className="absolute inset-0"
             style={{

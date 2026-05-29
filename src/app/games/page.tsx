@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -5,7 +6,6 @@ import Link from 'next/link'
 import { PlusIcon } from 'lucide-react'
 import GamesClient from '@/components/GamesClient'
 
-// Definición de interfaz para claridad (usada en GamesClient)
 export interface Game {
   id: string
   title: string
@@ -25,28 +25,30 @@ export interface Game {
   _count: { reviews: number }
 }
 
-async function getAllGames() {
-  const games = await prisma.game.findMany({
-    where: { status: 'APPROVED' },
-    include: {
-      reviews: { select: { rating: true } },
-      _count:  { select: { reviews: true } },
-    },
-    orderBy: { title: 'asc' },
-  })
+const getAllGames = unstable_cache(
+  async () => {
+    const games = await prisma.game.findMany({
+      where: { status: 'APPROVED' },
+      include: {
+        reviews: { select: { rating: true } },
+        _count:  { select: { reviews: true } },
+      },
+      orderBy: { title: 'asc' },
+    })
 
-  return games.map(game => ({
-    ...game,
-    // Serializar fechas para que sean JSON-safe
-    releaseDate: game.releaseDate?.toISOString() ?? null,
-    createdAt:   game.createdAt.toISOString(),
-    updatedAt:   game.updatedAt.toISOString(),
-    // Los campos igdbRating e igdbRatingCount vienen incluidos por defecto en el spread (...game)
-    averageRating: game.reviews.length > 0
-      ? game.reviews.reduce((s, r) => s + r.rating, 0) / game.reviews.length
-      : null,
-  }))
-}
+    return games.map(game => ({
+      ...game,
+      releaseDate:   game.releaseDate?.toISOString() ?? null,
+      createdAt:     game.createdAt.toISOString(),
+      updatedAt:     game.updatedAt.toISOString(),
+      averageRating: game.reviews.length > 0
+        ? game.reviews.reduce((s, r) => s + r.rating, 0) / game.reviews.length
+        : null,
+    }))
+  },
+  ['all-games'],
+  { revalidate: 60 }
+)
 
 function extractFilterOptions(games: any[]) {
   const genres    = new Set<string>()
@@ -77,7 +79,6 @@ export default async function GamesPage() {
     <div className="min-h-screen bg-gn-bg font-body">
       <div className="max-w-7xl mx-auto px-6 py-10">
 
-        {/* Header */}
         <div className="flex items-end justify-between gap-4 flex-wrap mb-8">
           <div>
             <p className="text-gn-primary text-xs font-semibold uppercase
@@ -110,7 +111,6 @@ export default async function GamesPage() {
           )}
         </div>
 
-        {/* Client component con toda la interactividad */}
         <GamesClient
           games={games as unknown as Game[]}
           filterOptions={options}
