@@ -11,6 +11,7 @@ import CollectionButton from '@/components/CollectionButton'
 import { RatingIcon } from '@/components/RatingIcon'
 import { getRatingData, getRatingBarColor } from '@/lib/rating'
 import IGDBGameDetails from '@/components/IGDBGameDetails'
+import ReviewList from '@/components/ReviewList'
 
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
@@ -268,7 +269,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           {/* Lista de reseñas */}
           <div className="bg-gn-card border border-white/[0.06] rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4
-                            border-b border-white/[0.06]">
+                  border-b border-white/[0.06]">
               <h2 className="font-display font-bold text-sm tracking-wide text-gn-text">
                 Reseñas de la comunidad
               </h2>
@@ -276,29 +277,22 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 {stats.total} {stats.total === 1 ? 'reseña' : 'reseñas'}
               </span>
             </div>
+            {(() => {
+              const reviewsWithUsernames = game.reviews.map(r => ({
+                ...r,
+                user: {
+                  ...r.user,
+                  username: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario'
+                }
+              }))
 
-            {game.reviews.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-4xl mb-3">🎮</div>
-                <p className="text-gn-text font-semibold mb-1">
-                  Aún no hay reseñas
-                </p>
-                <p className="text-gn-muted text-sm">
-                  ¡Sé el primero en compartir tu opinión!
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-white/[0.04]">
-                {game.reviews.map((review: any) => (
-                  <div key={review.id} className="px-6 py-5">
-                    <ReviewCard
-                      review={review}
-                      currentUserId={session?.user?.id}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+              return (
+                <ReviewList
+                  reviews={reviewsWithUsernames}
+                  currentUserId={session?.user?.id}
+                />
+              )
+            })()}
           </div>
         </div>
 

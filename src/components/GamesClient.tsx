@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { SearchIcon, XIcon } from 'lucide-react'
 import { translateGenre } from '@/lib/genres'
 
-// ── Tipos ──────────────────────────────────────────────────────
 interface Game {
   id:              string
   title:           string
@@ -76,37 +75,26 @@ function getRatingMeta(rating: number | null) {
   if (rating >= 7)  return { icon: '🏆', color: '#f97316' }
   if (rating >= 5)  return { icon: '⚡', color: '#a855f7' }
   if (rating >= 3)  return { icon: '❤️', color: '#3b82f6' }
-  return               { icon: '🎮', color: '#6b7280' }
+  return                { icon: '🎮', color: '#6b7280' }
 }
 
-// ── Algoritmo de popularidad ───────────────────────────────────
 function popularityScore(game: Game): number {
-  const rating = game.igdbRating      ?? 0   // 0–100
+  const rating = game.igdbRating      ?? 0
   const count  = game.igdbRatingCount ?? 0
   const now    = Date.now()
-
-  // 1. Calidad (40%)
-  const qualityScore = rating / 100
-
-  // 2. Popularidad real (35%) - log10(100.000) = 5 como techo
-  const popRaw = count > 0 ? Math.log10(count + 1) : 0
-  const popScore = Math.min(popRaw / 5, 1)
-
-  // 3. Recencia (25%)
-  let recencyScore = 0.5
+  const qualityScore  = rating / 100
+  const popRaw        = count > 0 ? Math.log10(count + 1) : 0
+  const popScore      = Math.min(popRaw / 5, 1)
+  let recencyScore    = 0.5
   if (game.releaseDate) {
-    const releaseMs = new Date(game.releaseDate).getTime()
-    const ageYears  = (now - releaseMs) / (1000 * 60 * 60 * 24 * 365)
-    recencyScore = 1 / (1 + ageYears * 0.08)
+    const ageYears = (now - new Date(game.releaseDate).getTime()) / (1000 * 60 * 60 * 24 * 365)
+    recencyScore   = 1 / (1 + ageYears * 0.08)
   }
-
   return (qualityScore * 0.40) + (popScore * 0.35) + (recencyScore * 0.25)
 }
 
-// ── GameCard ───────────────────────────────────────────────────
 function GameCard({ game }: { game: Game }) {
   const meta = getRatingMeta(game.averageRating)
-
   return (
     <Link
       href={`/games/${game.slug}`}
@@ -124,19 +112,14 @@ function GameCard({ game }: { game: Game }) {
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center
-                          justify-center gap-1 text-gn-muted">
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-gn-muted">
             <span className="text-3xl">🎮</span>
           </div>
         )}
-
         <div
           className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1
                      rounded-md border text-xs font-bold backdrop-blur-sm bg-gn-bg/80"
-          style={{
-            borderColor: `${meta.color}40`,
-            color:       meta.color,
-          }}
+          style={{ borderColor: `${meta.color}40`, color: meta.color }}
         >
           {game.averageRating ? (
             <>
@@ -150,27 +133,25 @@ function GameCard({ game }: { game: Game }) {
           )}
         </div>
       </div>
-
       <div className="p-3 flex flex-col flex-1">
-        <h3 className="font-display font-bold text-xs tracking-wide text-gn-text
-                       group-hover:text-gn-primary transition-colors truncate mb-1"
-            style={{ fontFamily: 'Orbitron, monospace' }}>
+        <h3
+          className="font-display font-bold text-xs tracking-wide text-gn-text
+                     group-hover:text-gn-primary transition-colors truncate mb-1"
+          style={{ fontFamily: 'Orbitron, monospace' }}
+        >
           {game.title}
         </h3>
-
         <div className="flex flex-wrap gap-1 mb-2">
           {game.genre.slice(0, 2).map(g => (
             <span
               key={g}
               className="px-1.5 py-0.5 bg-gn-primary/8 border border-gn-primary/15
-                         text-red-300 text-[10px] font-semibold uppercase
-                         tracking-wide rounded"
+                         text-red-300 text-[10px] font-semibold uppercase tracking-wide rounded"
             >
-               {translateGenre(g)}
+              {translateGenre(g)}
             </span>
           ))}
         </div>
-
         <div className="mt-auto pt-2 border-t border-white/[0.04]">
           <span className="text-[10px] text-gn-muted">
             {game._count.reviews}{' '}
@@ -182,7 +163,6 @@ function GameCard({ game }: { game: Game }) {
   )
 }
 
-// ── Sidebar ────────────────────────────────────────────────────
 interface SidebarProps {
   sortBy:           SortKey
   setSortBy:        (v: SortKey) => void
@@ -201,20 +181,16 @@ function Sidebar({
   sortBy, setSortBy,
   minRating, setMinRating,
   selectedGenres, toggleGenre,
-  selectedYears,  toggleYear,
+  selectedYears, toggleYear,
   onReset, hasActiveFilters,
   filterOptions,
 }: SidebarProps) {
   const ratingMeta = RATING_META[minRating] ?? RATING_META[0]
 
   return (
-    <aside className="bg-gn-card border border-white/[0.06] rounded-xl p-5
-                      sticky top-20 h-fit">
-
-      {/* Ordenación */}
+    <aside className="bg-gn-card border border-white/[0.06] rounded-xl p-5 sticky top-20 h-fit">
       <div className="mb-5 pb-5 border-b border-white/[0.06]">
-        <p className="text-gn-primary text-[10px] font-bold uppercase
-                      tracking-widest mb-2.5">
+        <p className="text-gn-primary text-[10px] font-bold uppercase tracking-widest mb-2.5">
           // Ordenar por
         </p>
         <div className="relative">
@@ -223,8 +199,8 @@ function Sidebar({
             onChange={e => setSortBy(e.target.value as SortKey)}
             className="w-full bg-gn-surface border border-white/[0.1] rounded-lg
                        px-3 py-2 text-gn-text text-sm appearance-none outline-none
-                       hover:border-gn-primary/30 focus:border-gn-primary/40 
-                       focus:ring-1 focus:ring-gn-primary/20 transition-colors 
+                       hover:border-gn-primary/30 focus:border-gn-primary/40
+                       focus:ring-1 focus:ring-gn-primary/20 transition-colors
                        cursor-pointer font-semibold"
             style={{ colorScheme: 'dark' }}
           >
@@ -234,43 +210,32 @@ function Sidebar({
               </option>
             ))}
           </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2
-                           text-gn-primary text-xs pointer-events-none">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gn-primary text-xs pointer-events-none">
             ▾
           </span>
         </div>
       </div>
 
-      {/* Rating mínimo */}
       <div className="mb-5 pb-5 border-b border-white/[0.06]">
-        <p className="text-gn-primary text-[10px] font-bold uppercase
-                      tracking-widest mb-2.5">
+        <p className="text-gn-primary text-[10px] font-bold uppercase tracking-widest mb-2.5">
           // Rating mínimo
         </p>
-
-        <div className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg
-                         border mb-3 text-xs font-bold transition-all duration-200
+        <div className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg border mb-3
+                         text-xs font-bold transition-all duration-200
                          ${minRating === 0
                            ? 'bg-white/[0.03] border-white/[0.08] text-gn-muted'
-                           : 'bg-orange-500/10 border-orange-500/25 text-orange-400'
-                         }`}>
+                           : 'bg-orange-500/10 border-orange-500/25 text-orange-400'}`}>
           <span>{ratingMeta.icon}</span>
           <span className={ratingMeta.color}>
             {minRating === 0 ? 'Cualquiera' : `${minRating}+ — ${ratingMeta.label}`}
           </span>
         </div>
-
         <input
-          type="range"
-          min={0}
-          max={9}
-          step={1}
-          value={minRating}
+          type="range" min={0} max={9} step={1} value={minRating}
           onChange={e => {
-            const val = parseInt(e.target.value)
+            const val     = parseInt(e.target.value)
             const snapped = [0, 3, 5, 7, 9].reduce((prev, curr) =>
-              Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev
-            )
+              Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev)
             setMinRating(snapped)
           }}
           className="w-full accent-gn-primary cursor-pointer"
@@ -282,14 +247,11 @@ function Sidebar({
         </div>
       </div>
 
-      {/* Géneros */}
       <div className="mb-5 pb-5 border-b border-white/[0.06]">
-        <p className="text-gn-primary text-[10px] font-bold uppercase
-                      tracking-widest mb-2.5">
+        <p className="text-gn-primary text-[10px] font-bold uppercase tracking-widest mb-2.5">
           // Género
         </p>
-        <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto
-                        scrollbar-thin pr-1">
+        <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto scrollbar-thin pr-1">
           {filterOptions.genres.map(g => (
             <button
               key={g}
@@ -298,8 +260,7 @@ function Sidebar({
                           uppercase tracking-wide transition-all duration-150
                           ${selectedGenres.includes(g)
                             ? 'bg-gn-primary/12 border-gn-primary/35 text-red-300'
-                            : 'border-white/[0.06] text-gn-muted hover:border-white/15 hover:text-gn-text'
-                          }`}
+                            : 'border-white/[0.06] text-gn-muted hover:border-white/15 hover:text-gn-text'}`}
             >
               {translateGenre(g)}
             </button>
@@ -307,10 +268,8 @@ function Sidebar({
         </div>
       </div>
 
-      {/* Año */}
       <div className="mb-5 pb-5 border-b border-white/[0.06]">
-        <p className="text-gn-primary text-[10px] font-bold uppercase
-                      tracking-widest mb-2.5">
+        <p className="text-gn-primary text-[10px] font-bold uppercase tracking-widest mb-2.5">
           // Año
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -322,8 +281,7 @@ function Sidebar({
                           uppercase tracking-wide transition-all duration-150
                           ${selectedYears.includes(yr.label)
                             ? 'bg-gn-accent/12 border-gn-accent/35 text-purple-300'
-                            : 'border-white/[0.06] text-gn-muted hover:border-white/15 hover:text-gn-text'
-                          }`}
+                            : 'border-white/[0.06] text-gn-muted hover:border-white/15 hover:text-gn-text'}`}
             >
               {yr.label}
             </button>
@@ -347,23 +305,19 @@ function Sidebar({
   )
 }
 
-// ── Main component ─────────────────────────────────────────────
 export default function GamesClient({ games, filterOptions }: Props) {
   const [search,         setSearch]         = useState('')
   const [sortBy,         setSortBy]         = useState<SortKey>('popular')
   const [minRating,      setMinRating]      = useState(0)
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
   const [selectedYears,  setSelectedYears]  = useState<string[]>([])
+  const [showFilters,    setShowFilters]    = useState(false)
 
   const toggleGenre = (g: string) =>
-    setSelectedGenres(prev =>
-      prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]
-    )
+    setSelectedGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])
 
   const toggleYear = (y: string) =>
-    setSelectedYears(prev =>
-      prev.includes(y) ? prev.filter(x => x !== y) : [...prev, y]
-    )
+    setSelectedYears(prev => prev.includes(y) ? prev.filter(x => x !== y) : [...prev, y])
 
   const resetFilters = () => {
     setSearch('')
@@ -374,17 +328,11 @@ export default function GamesClient({ games, filterOptions }: Props) {
   }
 
   const hasActiveFilters =
-    search !== '' ||
-    sortBy !== 'popular' ||
-    minRating > 0 ||
-    selectedGenres.length > 0 ||
-    selectedYears.length > 0
+    search !== '' || sortBy !== 'popular' || minRating > 0 ||
+    selectedGenres.length > 0 || selectedYears.length > 0
 
-  // ── Filtrado y ordenación ───────────────────────────────────
   const filtered = useMemo(() => {
     let result = [...games]
-
-    // Búsqueda
     if (search.trim()) {
       const q = search.toLowerCase()
       result = result.filter(g =>
@@ -393,22 +341,12 @@ export default function GamesClient({ games, filterOptions }: Props) {
         g.genre.some(gen => gen.toLowerCase().includes(q))
       )
     }
-
-    // Rating mínimo
     if (minRating > 0) {
-      result = result.filter(g =>
-        g.averageRating !== null && g.averageRating >= minRating
-      )
+      result = result.filter(g => g.averageRating !== null && g.averageRating >= minRating)
     }
-
-    // Géneros — AND
     if (selectedGenres.length > 0) {
-      result = result.filter(g =>
-        selectedGenres.every(gen => g.genre.includes(gen))
-      )
+      result = result.filter(g => selectedGenres.every(gen => g.genre.includes(gen)))
     }
-
-    // Año
     if (selectedYears.length > 0) {
       result = result.filter(g => {
         if (!g.releaseDate) return false
@@ -419,59 +357,36 @@ export default function GamesClient({ games, filterOptions }: Props) {
         })
       })
     }
-
-    // Ordenación
     result.sort((a, b) => {
       switch (sortBy) {
-        case 'popular':
-          return popularityScore(b) - popularityScore(a)
-        case 'rating_desc':
-          return (b.averageRating ?? -1) - (a.averageRating ?? -1)
-        case 'reviews_desc':
-          return b._count.reviews - a._count.reviews
-        case 'release_desc':
-          return new Date(b.releaseDate ?? 0).getTime() -
-                 new Date(a.releaseDate ?? 0).getTime()
-        case 'release_asc':
-          return new Date(a.releaseDate ?? 9999).getTime() -
-                 new Date(b.releaseDate ?? 9999).getTime()
-        case 'title_asc':
-          return a.title.localeCompare(b.title)
-        case 'title_desc':
-          return b.title.localeCompare(a.title)
-        case 'added_desc':
-          return new Date(b.createdAt).getTime() -
-                 new Date(a.createdAt).getTime()
-        default:
-          return 0
+        case 'popular':      return popularityScore(b) - popularityScore(a)
+        case 'rating_desc':  return (b.averageRating ?? -1) - (a.averageRating ?? -1)
+        case 'reviews_desc': return b._count.reviews - a._count.reviews
+        case 'release_desc': return new Date(b.releaseDate ?? 0).getTime() - new Date(a.releaseDate ?? 0).getTime()
+        case 'release_asc':  return new Date(a.releaseDate ?? 9999).getTime() - new Date(b.releaseDate ?? 9999).getTime()
+        case 'title_asc':    return a.title.localeCompare(b.title)
+        case 'title_desc':   return b.title.localeCompare(a.title)
+        case 'added_desc':   return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        default:             return 0
       }
     })
-
     return result
   }, [games, search, minRating, selectedGenres, selectedYears, sortBy])
 
-  // ── Pills de filtros activos ─────────────────────────────────────
   const activeFilterPills = [
-    ...selectedGenres.map(g => ({
-      label: translateGenre(g),
-      onRemove: () => toggleGenre(g),
-    })),
-    ...selectedYears.map(y => ({
-      label: y,
-      onRemove: () => toggleYear(y),
-    })),
-    ...(minRating > 0 ? [{
-      label: `Rating ≥ ${minRating}`,
-      onRemove: () => setMinRating(0),
-    }] : []),
+    ...selectedGenres.map(g => ({ label: translateGenre(g), onRemove: () => toggleGenre(g) })),
+    ...selectedYears.map(y  => ({ label: y,                 onRemove: () => toggleYear(y)  })),
+    ...(minRating > 0 ? [{ label: `Rating ≥ ${minRating}`, onRemove: () => setMinRating(0) }] : []),
   ]
 
   return (
     <div className="flex gap-6 items-start">
+
+      {/* Sidebar desktop */}
       <div className="hidden lg:block w-52 flex-shrink-0">
         <Sidebar
-          sortBy={sortBy}           setSortBy={setSortBy}
-          minRating={minRating}     setMinRating={setMinRating}
+          sortBy={sortBy}               setSortBy={setSortBy}
+          minRating={minRating}         setMinRating={setMinRating}
           selectedGenres={selectedGenres} toggleGenre={toggleGenre}
           selectedYears={selectedYears}   toggleYear={toggleYear}
           onReset={resetFilters}
@@ -480,8 +395,63 @@ export default function GamesClient({ games, filterOptions }: Props) {
         />
       </div>
 
+      {/* Drawer móvil */}
+      {showFilters && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowFilters(false)}
+          />
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-gn-bg overflow-y-auto p-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-gn-primary text-xs font-bold uppercase tracking-widest">
+                // Filtros
+              </span>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="text-gn-muted hover:text-gn-text transition-colors"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <Sidebar
+              sortBy={sortBy}               setSortBy={setSortBy}
+              minRating={minRating}         setMinRating={setMinRating}
+              selectedGenres={selectedGenres} toggleGenre={toggleGenre}
+              selectedYears={selectedYears}   toggleYear={toggleYear}
+              onReset={resetFilters}
+              hasActiveFilters={hasActiveFilters}
+              filterOptions={filterOptions}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 mb-4 flex-wrap">
+
+          {/* Botón filtros móvil */}
+          <button
+            onClick={() => setShowFilters(true)}
+            className={`lg:hidden flex items-center gap-2 px-3 py-2.5 rounded-xl border
+                        text-sm font-semibold transition-all flex-shrink-0
+                        ${hasActiveFilters
+                          ? 'bg-gn-primary/10 border-gn-primary/30 text-gn-primary'
+                          : 'bg-gn-card border-white/[0.06] text-gn-muted'}`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 4h18M6 8h12M9 12h6M11 16h2" />
+            </svg>
+            Filtros
+            {hasActiveFilters && (
+              <span className="w-4 h-4 bg-gn-primary rounded-full text-white
+                               text-[10px] flex items-center justify-center font-bold">
+                {activeFilterPills.length}
+              </span>
+            )}
+          </button>
+
           <div className="relative flex-1 min-w-[200px]">
             <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2
                                    w-4 h-4 text-gn-muted pointer-events-none" />
@@ -498,8 +468,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2
-                           text-gn-muted hover:text-gn-text"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gn-muted hover:text-gn-text"
               >
                 <XIcon className="w-4 h-4" />
               </button>
@@ -532,8 +501,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
             {activeFilterPills.length > 1 && (
               <button
                 onClick={resetFilters}
-                className="text-gn-muted hover:text-gn-text text-xs
-                           uppercase tracking-wide transition-colors"
+                className="text-gn-muted hover:text-gn-text text-xs uppercase tracking-wide transition-colors"
               >
                 Limpiar todo
               </button>
@@ -542,12 +510,9 @@ export default function GamesClient({ games, filterOptions }: Props) {
         )}
 
         {filtered.length === 0 ? (
-          <div className="text-center py-20 bg-gn-card border border-white/[0.06]
-                  rounded-xl">
+          <div className="text-center py-20 bg-gn-card border border-white/[0.06] rounded-xl">
             <div className="text-5xl mb-4">🎮</div>
-            <h3 className="font-display font-bold text-xl text-gn-text mb-2">
-              Sin resultados
-            </h3>
+            <h3 className="font-display font-bold text-xl text-gn-text mb-2">Sin resultados</h3>
             <p className="text-gn-muted text-sm mb-6 max-w-xs mx-auto">
               {search.trim()
                 ? <>¿No encuentras <span className="text-gn-text font-semibold">"{search}"</span>? Puedes añadirlo al catálogo.</>
@@ -559,8 +524,8 @@ export default function GamesClient({ games, filterOptions }: Props) {
                 <Link
                   href={`/games/add?q=${encodeURIComponent(search.trim())}`}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gn-primary
-                     hover:bg-gn-primary-dark text-white text-sm font-bold
-                     uppercase tracking-wide rounded-lg transition-colors"
+                             hover:bg-gn-primary-dark text-white text-sm font-bold
+                             uppercase tracking-wide rounded-lg transition-colors"
                 >
                   <span>＋</span> Añadir juego
                 </Link>
@@ -569,7 +534,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
                 <button
                   onClick={resetFilters}
                   className="text-gn-primary hover:text-gn-primary-dark text-sm
-                     font-semibold uppercase tracking-wide transition-colors"
+                             font-semibold uppercase tracking-wide transition-colors"
                 >
                   Limpiar filtros
                 </button>
@@ -577,8 +542,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3
-                          xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map(game => (
               <GameCard key={game.id} game={game} />
             ))}

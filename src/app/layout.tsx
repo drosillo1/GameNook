@@ -11,6 +11,7 @@ import { getCurrentYear } from '@/lib/year'
 import Toaster from '@/components/Toaster'
 import CookieBanner from '@/components/CookieBanner'
 import { Analytics } from '@vercel/analytics/react' // <-- Importamos las analíticas de Vercel
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const inter    = Inter({ subsets: ['latin'] })
 const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-display', weight: ['400','700','900'] })
@@ -98,6 +99,7 @@ export default function RootLayout({
         
         {/* Vercel Analytics tracking script */}
         <Analytics />
+        <SpeedInsights/>
       </body>
     </html>
   )
