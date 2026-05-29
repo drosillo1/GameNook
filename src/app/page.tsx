@@ -3,11 +3,12 @@ import { StarIcon, BookOpenIcon, UsersIcon } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { unstable_cache } from 'next/cache'
-import HeroCharacters from '@/components/HeroCharacters'
 import { prisma } from '@/lib/prisma'
 import { ScrollingText } from '@/components/ScrollingText'
 import { Counter } from '@/components/Counter'
-import RecentReviews from '@/components/RecentReviews'
+import dynamic from 'next/dynamic'
+import { HeroCharacters, RecentReviews } from '@/components/DynamicIslands'
+
 
 const features = [
   {
@@ -34,11 +35,11 @@ const features = [
 ]
 
 const ratings = [
-  { range: '1-2',  icon: '🎮', label: 'Jugable',        color: 'text-gray-400   border-gray-500/30   bg-gray-500/10'   },
-  { range: '3-4',  icon: '❤️', label: 'Entretenido',    color: 'text-blue-400   border-blue-500/30   bg-blue-500/10'   },
-  { range: '5-6',  icon: '⚡', label: 'Recomendado',    color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' },
-  { range: '7-8',  icon: '🏆', label: 'Imprescindible', color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
-  { range: '9-10', icon: '👑', label: 'Obra Maestra',   color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' },
+  { range: '1-2', icon: '🎮', label: 'Jugable', color: 'text-gray-400   border-gray-500/30   bg-gray-500/10' },
+  { range: '3-4', icon: '❤️', label: 'Entretenido', color: 'text-blue-400   border-blue-500/30   bg-blue-500/10' },
+  { range: '5-6', icon: '⚡', label: 'Recomendado', color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' },
+  { range: '7-8', icon: '🏆', label: 'Imprescindible', color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
+  { range: '9-10', icon: '👑', label: 'Obra Maestra', color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' },
 ]
 
 const getStats = unstable_cache(
@@ -59,7 +60,7 @@ const getRecentReviews = unstable_cache(
     return prisma.review.findMany({
       where: {
         content: { not: null },
-        game:    { status: 'APPROVED' },
+        game: { status: 'APPROVED' },
       },
       include: {
         game: { select: { title: true, slug: true, imageUrl: true } },
@@ -97,7 +98,9 @@ export default async function Home() {
           }}
         />
 
-        <HeroCharacters />
+        <div className="hidden md:block">
+          <HeroCharacters />
+        </div>
 
         <div className="relative z-10 max-w-2xl mx-auto">
           <h1
@@ -145,9 +148,9 @@ export default async function Home() {
       <div className="bg-gn-surface border-y border-white/[0.06]">
         <div className="max-w-2xl mx-auto px-6 py-6 flex justify-center gap-16">
           {[
-            { end: stats.games,   label: 'Juegos'  },
+            { end: stats.games, label: 'Juegos' },
             { end: stats.reviews, label: 'Reseñas' },
-            { end: stats.gamers,  label: 'Gamers'  },
+            { end: stats.gamers, label: 'Gamers' },
           ].map((s) => (
             <div key={s.label} className="text-center">
               <div

@@ -84,6 +84,31 @@ function formatRelativeTime(dateString: string) {
   })
 }
 
+function ExpandableContent({ content }: { content: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = content.length > 300
+
+  return (
+    <div className="mb-3">
+      <p
+        className={`text-gn-text leading-relaxed whitespace-pre-line text-sm
+                    ${!expanded && isLong ? 'line-clamp-4' : ''}`}
+      >
+        {content}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(e => !e)}
+          className="text-gn-primary hover:text-gn-primary-dark text-xs
+                     font-semibold mt-1.5 transition-colors"
+        >
+          {expanded ? 'Ver menos ▲' : 'Ver más ▼'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: ReviewCardProps) {
   const isOwn = isOwnProp ?? (currentUserId !== undefined && currentUserId === review.user.id)
   const router = useRouter()
@@ -306,9 +331,7 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
         </div>
       ) : (
         review.content && (
-          <div className="mb-3">
-            <p className="text-gn-text leading-relaxed">{review.content}</p>
-          </div>
+          <ExpandableContent content={review.content} />
         )
       )}
 

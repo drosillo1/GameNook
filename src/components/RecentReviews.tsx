@@ -1,7 +1,8 @@
 // src/components/RecentReviews.tsx
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef } from 'react'
+import Link from 'next/link'
 
 const RATING_META: Record<number, { icon: string; color: string; label: string }> = {
   1:  { icon: '🎮', color: '#6b7280', label: 'Jugable'        },
@@ -26,8 +27,8 @@ interface Review {
     imageUrl: string | null
   }
   user: {
-    name:   string | null
-    image:  string | null
+    name:  string | null
+    image: string | null
   }
 }
 
@@ -39,10 +40,11 @@ function ReviewCard({ review }: { review: Review }) {
   const meta = RATING_META[review.rating] ?? RATING_META[5]
 
   return (
-    <div
+    <Link
+      href={`/games/${review.game.slug}`}
       className="flex-shrink-0 w-72 bg-gn-card border border-white/[0.06]
                  rounded-xl overflow-hidden hover:border-gn-primary/25
-                 transition-colors duration-200"
+                 hover:-translate-y-1 transition-all duration-200 block"
     >
       {/* Imagen del juego */}
       <div className="relative h-32 bg-gn-surface overflow-hidden">
@@ -57,10 +59,7 @@ function ReviewCard({ review }: { review: Review }) {
             <span className="text-3xl">🎮</span>
           </div>
         )}
-        {/* Overlay gradiente para leer el título */}
         <div className="absolute inset-0 bg-gradient-to-t from-gn-card/90 to-transparent" />
-
-        {/* Título del juego sobre la imagen */}
         <p
           className="absolute bottom-2 left-3 right-3 font-display font-bold
                      text-xs text-gn-text truncate"
@@ -72,15 +71,13 @@ function ReviewCard({ review }: { review: Review }) {
 
       {/* Contenido */}
       <div className="p-4">
-        {/* Usuario + rating */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            {/* image */}
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0
                             bg-gn-primary/20 flex items-center justify-center">
-              {review.user.image || review.user.image ? (
+              {review.user.image ? (
                 <img
-                  src={(review.user.image ?? review.user.image)!}
+                  src={review.user.image}
                   alt={review.user.name ?? ''}
                   className="w-full h-full object-cover"
                 />
@@ -95,7 +92,6 @@ function ReviewCard({ review }: { review: Review }) {
             </span>
           </div>
 
-          {/* Rating chip */}
           <div
             className="flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-bold"
             style={{
@@ -105,37 +101,28 @@ function ReviewCard({ review }: { review: Review }) {
             }}
           >
             <span>{meta.icon}</span>
-            <span style={{ fontFamily: 'Orbitron, monospace' }}>
-              {review.rating}
-            </span>
+            <span style={{ fontFamily: 'Orbitron, monospace' }}>{review.rating}</span>
           </div>
         </div>
 
-        {/* Texto de la reseña */}
         {review.content ? (
           <p className="text-gn-muted text-xs leading-relaxed line-clamp-3">
             "{review.content}"
           </p>
         ) : (
-          <p className="text-gn-subtle text-xs italic">
-            Sin comentario
-          </p>
+          <p className="text-gn-subtle text-xs italic">Sin comentario</p>
         )}
       </div>
-    </div>
+    </Link>
   )
 }
 
 export default function RecentReviews({ reviews }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
-
-  // Scroll automático infinito con CSS animation
-  // Duplicamos las cards para el efecto de loop sin glitch
-  const doubled = [...reviews, ...reviews]
+  const doubled  = [...reviews, ...reviews]
 
   return (
     <div className="overflow-hidden relative">
-      {/* Fade en los bordes */}
       <div className="absolute left-0 top-0 bottom-0 w-24 z-10
                       bg-gradient-to-r from-gn-bg to-transparent pointer-events-none" />
       <div className="absolute right-0 top-0 bottom-0 w-24 z-10
