@@ -280,10 +280,12 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             {(() => {
               const reviewsWithUsernames = game.reviews.map(r => ({
                 ...r,
+                createdAt: r.createdAt.toISOString(),
+                updatedAt: r.updatedAt.toISOString(),
                 user: {
                   ...r.user,
-                  username: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario'
-                }
+                  username: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario',
+                },
               }))
 
               return (

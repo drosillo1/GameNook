@@ -10,8 +10,8 @@ interface Review {
   id: string
   rating: number
   content: string | null
-  createdAt: Date | string
-  updatedAt: Date | string
+  createdAt: string
+  updatedAt: string
   userId: string
   user: {
     id: string
