@@ -26,15 +26,17 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
       const res = await fetch(
         existingReview ? `/api/reviews/${existingReview.id}` : '/api/reviews',
         {
-          method:  existingReview ? 'PUT' : 'POST',
+          method: existingReview ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ gameId, rating, content: content.trim() || null }),
+          body: JSON.stringify({ gameId, rating, content: content.trim() || null }),
         }
       )
       if (!res.ok) throw new Error()
-      router.refresh()
+      toast.success(existingReview ? 'Reseña actualizada correctamente' : 'Reseña publicada correctamente')
+      setTimeout(() => router.refresh(), 200)
     } catch {
       setError('Error al guardar la reseña. Inténtalo de nuevo.')
+      toast.error('Error al guardar la reseña')
     } finally {
       setIsSubmitting(false)
     }

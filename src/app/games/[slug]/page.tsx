@@ -3,10 +3,10 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
+import { unstable_cache } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import ReviewForm from '@/components/ReviewForm'
-import ReviewCard from '@/components/ReviewCard'
 import { Calendar, Monitor, ChevronLeft } from 'lucide-react'
 import CollectionButton from '@/components/CollectionButton'
 import { RatingIcon } from '@/components/RatingIcon'
@@ -18,19 +18,38 @@ interface GameDetailPageProps {
   params: Promise<{ slug: string }>
 }
 
-async function getGame(slug: string) {
-  return prisma.game.findUnique({
-    where: { slug },
+// ── Datos del juego — cacheados, iguales para todos los usuarios ──
+const getGameCached = (slug: string) => unstable_cache(
+  async () => {
+    return prisma.game.findUnique({
+      where: { slug },
+      select: {
+        id:          true,
+        title:       true,
+        slug:        true,
+        description: true,
+        imageUrl:    true,
+        releaseDate: true,
+        genre:       true,
+        platform:    true,
+        igdbId:      true,
+      },
+    })
+  },
+  [`game-detail-${slug}`],
+  { revalidate: 300 } // 5 minutos
+)()
+
+// ── Reseñas — sin caché, cambian con frecuencia ──
+async function getGameReviews(gameId: string) {
+  return prisma.review.findMany({
+    where: { gameId },
     include: {
-      reviews: {
-        include: {
-          user: {
-            select: { id: true, name: true, email: true, image: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
+      user: {
+        select: { id: true, name: true, email: true, image: true },
       },
     },
+    orderBy: { createdAt: 'desc' },
   })
 }
 
@@ -44,16 +63,32 @@ function calcStats(reviews: any[]) {
 }
 
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
-  const { slug }   = await params
-  const session    = await getServerSession(authOptions)
-  const game       = await getGame(slug)
+  const { slug } = await params
+
+  // Cargamos en paralelo — el juego cacheado + sesión + reseñas frescas
+  const [game, session] = await Promise.all([
+    getGameCached(slug),
+    getServerSession(authOptions),
+  ])
+
   if (!game) notFound()
 
-  const stats      = calcStats(game.reviews)
+  const reviews    = await getGameReviews(game.id)
+  const stats      = calcStats(reviews)
   const userReview = session
-    ? game.reviews.find(r => r.userId === session.user?.id)
+    ? reviews.find(r => r.userId === session.user?.id)
     : null
   const ratingData = getRatingData(Math.round(stats.average) || 5)
+
+  const reviewsWithUsernames = reviews.map(r => ({
+    ...r,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    user: {
+      ...r.user,
+      username: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario',
+    },
+  }))
 
   return (
     <div className="min-h-screen bg-gn-bg font-body">
@@ -73,7 +108,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
         <div className="grid md:grid-cols-[240px_1fr] bg-gn-card border border-white/[0.06]
                         rounded-2xl overflow-hidden mb-8">
 
-          {/* Portada — ratio 3:4 correcto para covers de juegos */}
           <div className="relative bg-gn-surface">
             <div className="aspect-[3/4] w-full relative">
               {game.imageUrl ? (
@@ -87,7 +121,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center
-                      justify-center gap-2 text-gn-muted">
+                                justify-center gap-2 text-gn-muted">
                   <span className="text-5xl">🎮</span>
                   <span className="text-xs uppercase tracking-widest">Sin imagen</span>
                 </div>
@@ -95,9 +129,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             </div>
           </div>
 
-          {/* Info */}
           <div className="p-8 flex flex-col gap-4 min-w-0">
-
             <div>
               <p className="text-gn-primary text-xs font-semibold uppercase
                             tracking-widest mb-1">
@@ -112,7 +144,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               </h1>
             </div>
 
-            {/* Metadatos */}
             <div className="flex flex-wrap gap-3 text-sm text-gn-muted">
               {game.releaseDate && (
                 <span className="flex items-center gap-1.5">
@@ -131,7 +162,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               )}
             </div>
 
-            {/* Géneros */}
             {game.genre.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {game.genre.map((g: string) => (
@@ -147,23 +177,18 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               </div>
             )}
 
-            {/* Botón colección */}
             <div>
               <CollectionButton gameId={game.id} />
             </div>
 
-            {/* Descripción */}
             {game.description && (
               <p className="text-gn-muted text-sm leading-relaxed line-clamp-4">
                 {game.description}
               </p>
             )}
 
-            {/* ── Score block ── */}
             <div className="mt-auto bg-gn-primary/5 border border-gn-primary/15
                             rounded-xl p-4 flex items-center gap-6 flex-wrap">
-
-              {/* Número + label */}
               <div className="flex-shrink-0">
                 <div className="flex items-baseline gap-1.5">
                   <span
@@ -187,7 +212,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 </div>
               </div>
 
-              {/* Barra de progreso */}
               {stats.average > 0 && (
                 <div className="flex-1 min-w-[100px]">
                   <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
@@ -204,7 +228,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 </div>
               )}
 
-              {/* Distribución */}
               {stats.total > 0 && (
                 <div className="hidden lg:block space-y-0.5 flex-shrink-0">
                   {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(r => {
@@ -236,10 +259,8 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           </div>
         </div>
 
-        {/* ── CONTENT GRID — formulario + reseñas ── */}
+        {/* ── CONTENT GRID ── */}
         <div className="grid lg:grid-cols-[1fr_2fr] gap-6 mb-8">
-
-          {/* Formulario reseña */}
           <div>
             <div className="bg-gn-card border border-white/[0.06] rounded-xl
                             p-6 sticky top-20">
@@ -247,9 +268,12 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                              text-gn-text mb-5">
                 {userReview ? 'Tu reseña' : 'Escribe una reseña'}
               </h2>
-
               {session ? (
-                <ReviewForm key={userReview?.id ?? 'new'} gameId={game.id} existingReview={userReview} />
+                <ReviewForm
+                  key={userReview?.id ?? 'new'}
+                  gameId={game.id}
+                  existingReview={userReview}
+                />
               ) : (
                 <div className="text-center py-8">
                   <div className="text-4xl mb-3">🎮</div>
@@ -270,10 +294,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             </div>
           </div>
 
-          {/* Lista de reseñas */}
           <div className="bg-gn-card border border-white/[0.06] rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4
-                  border-b border-white/[0.06]">
+                            border-b border-white/[0.06]">
               <h2 className="font-display font-bold text-sm tracking-wide text-gn-text">
                 Reseñas de la comunidad
               </h2>
@@ -281,28 +304,13 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 {stats.total} {stats.total === 1 ? 'reseña' : 'reseñas'}
               </span>
             </div>
-            {(() => {
-              const reviewsWithUsernames = game.reviews.map(r => ({
-                ...r,
-                createdAt: r.createdAt.toISOString(),
-                updatedAt: r.updatedAt.toISOString(),
-                user: {
-                  ...r.user,
-                  username: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario',
-                },
-              }))
-
-              return (
-                <ReviewList
-                  reviews={reviewsWithUsernames}
-                  currentUserId={session?.user?.id}
-                />
-              )
-            })()}
+            <ReviewList
+              reviews={reviewsWithUsernames}
+              currentUserId={session?.user?.id}
+            />
           </div>
         </div>
 
-        {/* ── DATOS IGDB — screenshots, similares, detalles ── */}
         {game.igdbId && (
           <IGDBGameDetails
             igdbId={game.igdbId}
@@ -317,7 +325,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
 export async function generateMetadata({ params }: GameDetailPageProps) {
   const { slug } = await params
-  const game     = await getGame(slug)
+  const game     = await getGameCached(slug)
 
   if (!game) {
     return {
@@ -331,8 +339,6 @@ export async function generateMetadata({ params }: GameDetailPageProps) {
     ? game.description.slice(0, 155).trimEnd() + (game.description.length > 155 ? '…' : '')
     : `Reseñas y valoraciones de ${title} en GameNook. Descubre qué piensa la comunidad gamer.`
 
-  // La imagen de IGDB ya viene normalizada desde la BD (normalizeImageUrl en igdb.ts).
-  // Pedimos tamaño 720p — suficiente para OG y no excesivo.
   const ogImage = game.imageUrl
     ? game.imageUrl.replace('/t_cover_big/', '/t_720p/')
     : null
@@ -340,26 +346,15 @@ export async function generateMetadata({ params }: GameDetailPageProps) {
   return {
     title,
     description,
-
-    // ── Open Graph ────────────────────────────────────────────────────
     openGraph: {
       title,
       description,
-      type:   'article',           // semánticamente correcto para una ficha de juego
+      type:   'article',
       locale: 'es_ES',
       ...(ogImage && {
-        images: [
-          {
-            url:    ogImage,
-            width:  1280,
-            height: 720,
-            alt:    `Portada de ${title}`,
-          },
-        ],
+        images: [{ url: ogImage, width: 1280, height: 720, alt: `Portada de ${title}` }],
       }),
     },
-
-    // ── Twitter / X ───────────────────────────────────────────────────
     twitter: {
       card:        ogImage ? 'summary_large_image' : 'summary',
       title,
