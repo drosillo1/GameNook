@@ -3,6 +3,7 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const RATING_META: Record<number, { icon: string; color: string; label: string }> = {
   1:  { icon: '🎮', color: '#6b7280', label: 'Jugable'        },
@@ -49,20 +50,22 @@ function ReviewCard({ review }: { review: Review }) {
       {/* Imagen del juego */}
       <div className="relative h-32 bg-gn-surface overflow-hidden">
         {review.game.imageUrl ? (
-          <img
+          <Image
             src={review.game.imageUrl}
             alt={review.game.title}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="288px"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <span className="text-3xl">🎮</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-gn-card/90 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-gn-card/90 to-transparent z-10" />
         <p
           className="absolute bottom-2 left-3 right-3 font-display font-bold
-                     text-xs text-gn-text truncate"
+                     text-xs text-gn-text truncate z-20"
           style={{ fontFamily: 'Orbitron, monospace' }}
         >
           {review.game.title}
@@ -74,12 +77,14 @@ function ReviewCard({ review }: { review: Review }) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0
-                            bg-gn-primary/20 flex items-center justify-center">
+                            bg-gn-primary/20 flex items-center justify-center relative">
               {review.user.image ? (
-                <img
+                <Image
                   src={review.user.image}
                   alt={review.user.name ?? ''}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="28px"
                 />
               ) : (
                 <span className="text-gn-primary text-xs font-bold">
