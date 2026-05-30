@@ -7,6 +7,7 @@ import { EditIcon, TrashIcon, MoreVerticalIcon } from 'lucide-react'
 import { PxlKitIcon } from '@pxlkit/core'
 import { Crown, Trophy, Medal, Shield, Heart, Sword } from '@pxlkit/gamification'
 import { toast } from '@/lib/toast'
+import { getRatingData, getRatingChipClass } from '@/lib/rating'
 
 interface Review {
   id: string
@@ -28,18 +29,7 @@ interface ReviewCardProps {
   isOwn?: boolean
 }
 
-const IconIcons = {
-  1:  Sword,
-  2:  Sword,
-  3:  Heart,
-  4:  Heart,
-  5:  Shield,
-  6:  Shield,
-  7:  Medal,
-  8:  Medal,
-  9:  Trophy,
-  10: Crown,
-} as const
+const ICON_MAP = { Sword, Heart, Shield, Medal, Trophy, Crown } as const
 
 const RATING_META = {
   1:  { label: 'Jugable',        color: '#6b7280' },
@@ -55,33 +45,29 @@ const RATING_META = {
 } as const
 
 function RatingDisplay({ rating }: { rating: number }) {
-  const meta = RATING_META[rating as keyof typeof RATING_META]
-  const iconData = IconIcons[rating as keyof typeof IconIcons]
-  
+  const { iconName, label } = getRatingData(rating)
+  const icon = ICON_MAP[iconName as keyof typeof ICON_MAP]
+
   return (
     <div className="flex items-center gap-2">
-      <PxlKitIcon icon={iconData} size={16} />
+      <PxlKitIcon icon={icon} size={16} />
       <span className="font-medium text-sm text-gn-text">{rating}/10</span>
-      <span className="text-xs text-gn-muted">{meta.label}</span>
+      <span className="text-xs text-gn-muted">{label}</span>
     </div>
   )
 }
 
 function formatRelativeTime(dateString: string) {
   const date = new Date(dateString)
-  const now = new Date()
+  const now  = new Date()
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-  
-  if (diffInSeconds < 60) return 'hace un momento'
-  if (diffInSeconds < 3600) return `hace ${Math.floor(diffInSeconds / 60)} minutos`
-  if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`
+
+  if (diffInSeconds < 60)      return 'hace un momento'
+  if (diffInSeconds < 3600)    return `hace ${Math.floor(diffInSeconds / 60)} minutos`
+  if (diffInSeconds < 86400)   return `hace ${Math.floor(diffInSeconds / 3600)} horas`
   if (diffInSeconds < 2592000) return `hace ${Math.floor(diffInSeconds / 86400)} días`
-  
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+
+  return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 function ExpandableContent({ content }: { content: string }) {
@@ -90,10 +76,8 @@ function ExpandableContent({ content }: { content: string }) {
 
   return (
     <div className="mb-3">
-      <p
-        className={`text-gn-text leading-relaxed whitespace-pre-line text-sm
-                    ${!expanded && isLong ? 'line-clamp-4' : ''}`}
-      >
+      <p className={`text-gn-text leading-relaxed whitespace-pre-line text-sm
+                     ${!expanded && isLong ? 'line-clamp-4' : ''}`}>
         {content}
       </p>
       {isLong && (
@@ -110,70 +94,53 @@ function ExpandableContent({ content }: { content: string }) {
 }
 
 export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: ReviewCardProps) {
-  const isOwn = isOwnProp ?? (currentUserId !== undefined && currentUserId === review.user.id)
+  const isOwn  = isOwnProp ?? (currentUserId !== undefined && currentUserId === review.user.id)
   const router = useRouter()
-  const [showMenu, setShowMenu] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [editContent, setEditContent] = useState(review.content || '')
-  const [editRating, setEditRating] = useState(review.rating)
+
+  const [showMenu,     setShowMenu]     = useState(false)
+  const [isEditing,    setIsEditing]    = useState(false)
+  const [isDeleting,   setIsDeleting]   = useState(false)
+  const [editContent,  setEditContent]  = useState(review.content || '')
+  const [editRating,   setEditRating]   = useState(review.rating)
   const [hoveredRating, setHoveredRating] = useState(0)
-  const [error, setError] = useState('')
+  const [error,        setError]        = useState('')
 
   const handleEdit = async () => {
     if (editRating === 0) {
       setError('Por favor selecciona una puntuación')
       return
     }
-
     try {
       const response = await fetch(`/api/reviews/${review.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          rating: editRating,
-          content: editContent.trim() || null,
-        }),
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ rating: editRating, content: editContent.trim() || null }),
       })
-
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Error al actualizar la reseña')
       }
-
       setIsEditing(false)
       setError('')
       toast.success('Reseña actualizada correctamente')
       setTimeout(() => router.refresh(), 200)
     } catch (error) {
-      console.error('Error:', error)
       setError(error instanceof Error ? error.message : 'Error desconocido')
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta reseña?')) {
-      return
-    }
-
+    if (!confirm('¿Estás seguro de que quieres eliminar esta reseña?')) return
     setIsDeleting(true)
-    
     try {
-      const response = await fetch(`/api/reviews/${review.id}`, {
-        method: 'DELETE',
-      })
-
+      const response = await fetch(`/api/reviews/${review.id}`, { method: 'DELETE' })
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Error al eliminar la reseña')
       }
-
       toast.success('Reseña eliminada correctamente')
-      setTimeout(() => router.refresh(), 100)
+      setTimeout(() => router.refresh(), 200)
     } catch (error) {
-      console.error('Error:', error)
       toast.error(error instanceof Error ? error.message : 'Error al eliminar la reseña')
       setError(error instanceof Error ? error.message : 'Error desconocido')
       setIsDeleting(false)
@@ -190,18 +157,19 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
   return (
     <div className="border border-white/[0.06] rounded-xl px-5 py-4 bg-gn-card">
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-lg mb-4 text-sm">
+        <div className="bg-red-500/10 border border-red-500/30 text-red-400
+                        px-3 py-2 rounded-lg mb-4 text-sm">
           {error}
         </div>
       )}
 
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-3">
-          {/* image */}
-          <div className="w-10 h-10 rounded-full bg-gn-card border border-white/[0.06] flex items-center justify-center overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-gn-card border border-white/[0.06]
+                          flex items-center justify-center overflow-hidden">
             {review.user.image ? (
-              <img 
-                src={review.user.image} 
+              <img
+                src={review.user.image}
                 alt={review.user.name || review.user.username}
                 className="w-full h-full object-cover"
               />
@@ -211,8 +179,6 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
               </span>
             )}
           </div>
-          
-          {/* Información del usuario */}
           <div>
             <h4 className="font-semibold text-gn-text text-sm">
               {review.user.name || review.user.username}
@@ -227,7 +193,6 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
           </div>
         </div>
 
-        {/* Menú de opciones para reseñas propias */}
         {isOwn && !isEditing && (
           <div className="relative">
             <button
@@ -236,26 +201,23 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
             >
               <MoreVerticalIcon className="w-4 h-4" />
             </button>
-            
             {showMenu && (
-              <div className="absolute right-0 mt-1 w-40 bg-gn-card border border-white/[0.06] rounded-lg shadow-xl z-10 overflow-hidden">
+              <div className="absolute right-0 mt-1 w-40 bg-gn-card border
+                              border-white/[0.06] rounded-lg shadow-xl z-10 overflow-hidden">
                 <button
-                  onClick={() => {
-                    setIsEditing(true)
-                    setShowMenu(false)
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gn-text hover:bg-white/5 flex items-center transition-colors"
+                  onClick={() => { setIsEditing(true); setShowMenu(false) }}
+                  className="w-full px-4 py-2 text-left text-sm text-gn-text
+                             hover:bg-white/5 flex items-center transition-colors"
                 >
                   <EditIcon className="w-4 h-4 mr-2" />
                   Editar
                 </button>
                 <button
-                  onClick={() => {
-                    setShowMenu(false)
-                    handleDelete()
-                  }}
+                  onClick={() => { setShowMenu(false); handleDelete() }}
                   disabled={isDeleting}
-                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center transition-colors disabled:opacity-50"
+                  className="w-full px-4 py-2 text-left text-sm text-red-400
+                             hover:bg-red-500/10 flex items-center transition-colors
+                             disabled:opacity-50"
                 >
                   <TrashIcon className="w-4 h-4 mr-2" />
                   {isDeleting ? 'Eliminando...' : 'Eliminar'}
@@ -273,11 +235,12 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
             Puntuación
           </label>
           <div className="grid grid-cols-5 gap-2">
-            {Array.from({ length: 10 }, (_, i) => i + 1).map((rating) => {
-              const meta = RATING_META[rating as keyof typeof RATING_META]
-              const iconData = IconIcons[rating as keyof typeof IconIcons]
-              const isActive = rating <= editRating
-              const isExact = rating === editRating
+            {Array.from({ length: 10 }, (_, i) => i + 1).map(rating => {
+              const { iconName, color } = getRatingData(rating)
+              const chipClass           = getRatingChipClass(rating)
+              const icon                = ICON_MAP[iconName as keyof typeof ICON_MAP]
+              const isActive            = rating <= editRating
+              const isExact             = rating === editRating
 
               return (
                 <button
@@ -286,13 +249,13 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
                   onClick={() => setEditRating(rating)}
                   onMouseEnter={() => setHoveredRating(rating)}
                   onMouseLeave={() => setHoveredRating(0)}
-                  className={`flex flex-col items-center justify-center gap-1 py-2 rounded-lg border transition-all ${isActive
-                      ? 'bg-white/10 border-white/20 text-white'
-                      : 'bg-white/5 border-white/10 text-gn-muted hover:border-white/15'
-                    } ${isExact ? 'ring-1 ring-offset-1 ring-offset-gn-card ring-[var(--ring-color)]' : ''}`}
-                  style={isExact ? { ['--ring-color' as any]: meta.color } : {}}
+                  className={`flex flex-col items-center justify-center gap-1 py-2
+                              rounded-lg border transition-all
+                              ${isActive ? chipClass : 'bg-white/5 border-white/10 text-gn-muted hover:border-white/15'}
+                              ${isExact ? 'ring-1 ring-offset-1 ring-offset-gn-card ring-[var(--ring-color)]' : ''}`}
+                  style={isExact ? { ['--ring-color' as any]: color } : {}}
                 >
-                  <PxlKitIcon icon={iconData} size={18} />
+                  <PxlKitIcon icon={icon} size={18} />
                   <span className="text-xs font-bold">{rating}</span>
                 </button>
               )
@@ -300,7 +263,7 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
           </div>
           {editRating > 0 && (
             <p className="mt-2 text-xs text-gn-muted">
-              {editRating}/10 - {RATING_META[editRating as keyof typeof RATING_META].label}
+              {editRating}/10 — {getRatingData(editRating).label}
             </p>
           )}
         </div>
@@ -310,7 +273,7 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
         </div>
       )}
 
-      {/* Contenido de la reseña */}
+      {/* Contenido */}
       {isEditing ? (
         <div className="mb-4">
           <label className="block text-sm font-semibold text-gn-text mb-2">
@@ -319,9 +282,12 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
           <textarea
             rows={3}
             value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
+            onChange={e => setEditContent(e.target.value)}
             placeholder="Comparte tu opinión sobre el juego..."
-            className="w-full px-3 py-2 border border-white/[0.06] rounded-lg bg-white/5 text-gn-text placeholder-gn-muted/50 focus:ring-2 focus:ring-gn-primary/50 focus:border-gn-primary/50 resize-none transition-colors"
+            className="w-full px-3 py-2 border border-white/[0.06] rounded-lg bg-white/5
+                       text-gn-text placeholder-gn-muted/50 focus:ring-2
+                       focus:ring-gn-primary/50 focus:border-gn-primary/50
+                       resize-none transition-colors"
             maxLength={1000}
           />
           <div className="flex justify-between items-center mt-1">
@@ -330,36 +296,32 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
           </div>
         </div>
       ) : (
-        review.content && (
-          <ExpandableContent content={review.content} />
-        )
+        review.content && <ExpandableContent content={review.content} />
       )}
 
-      {/* Botones de edición */}
       {isEditing && (
         <div className="flex justify-end gap-2">
           <button
             onClick={cancelEdit}
-            className="px-4 py-2 text-sm text-gn-muted border border-white/[0.06] rounded-lg hover:text-gn-text hover:border-white/15 transition-colors"
+            className="px-4 py-2 text-sm text-gn-muted border border-white/[0.06]
+                       rounded-lg hover:text-gn-text hover:border-white/15 transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={handleEdit}
             disabled={editRating === 0}
-            className="px-4 py-2 text-sm bg-gn-primary text-white rounded-lg hover:bg-gn-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+            className="px-4 py-2 text-sm bg-gn-primary text-white rounded-lg
+                       hover:bg-gn-primary-dark disabled:opacity-50
+                       disabled:cursor-not-allowed transition-colors font-semibold"
           >
             Guardar Cambios
           </button>
         </div>
       )}
 
-      {/* Click outside para cerrar el menú */}
       {showMenu && (
-        <div 
-          className="fixed inset-0 z-0" 
-          onClick={() => setShowMenu(false)}
-        />
+        <div className="fixed inset-0 z-0" onClick={() => setShowMenu(false)} />
       )}
     </div>
   )
