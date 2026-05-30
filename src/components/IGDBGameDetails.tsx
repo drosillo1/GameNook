@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import ScreenshotLightbox from './ScreenshotLightbox'
 import { IGDBGame } from '@/lib/igdb'
 import { MonitorIcon, UsersIcon, UserIcon, BuildingIcon, TrophyIcon } from 'lucide-react'
@@ -196,14 +197,17 @@ export default function IGDBGameDetails({ igdbId, gameSlug }: Props) {
               const localSlug = localSlugs[sg.id]
               const card = (
                 <div className="group flex flex-col gap-2">
-                  <div className="aspect-[3/4] bg-gn-surface rounded-lg overflow-hidden
-                                  border border-white/[0.06] transition-all duration-200
-                                  group-hover:border-gn-primary/40">
+                  <div
+                    className="aspect-[3/4] bg-gn-surface rounded-lg overflow-hidden
+             border border-white/[0.06] transition-all duration-200
+             group-hover:border-gn-primary/40 relative">
                     {coverUrl ? (
-                      <img
+                      <Image
                         src={coverUrl}
                         alt={sg.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 640px) 33vw, (max-width: 1024px) 16vw, 120px"
                         loading="lazy"
                       />
                     ) : (

@@ -1,6 +1,7 @@
 // src/app/games/[slug]/page.tsx
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -74,16 +75,19 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
           {/* Portada — ratio 3:4 correcto para covers de juegos */}
           <div className="relative bg-gn-surface">
-            <div className="aspect-[3/4] w-full">
+            <div className="aspect-[3/4] w-full relative">
               {game.imageUrl ? (
-                <img
+                <Image
                   src={game.imageUrl}
                   alt={game.title}
-                  className="w-full h-full object-cover"
+                  fill
+                  priority
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 240px"
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center
-                                justify-center gap-2 text-gn-muted">
+                      justify-center gap-2 text-gn-muted">
                   <span className="text-5xl">🎮</span>
                   <span className="text-xs uppercase tracking-widest">Sin imagen</span>
                 </div>

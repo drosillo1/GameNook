@@ -8,19 +8,26 @@ const TWITCH_CLIENT_ID     = process.env.TWITCH_CLIENT_ID!
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET!
 
 const GENRES = [
-  { name: 'RPG',         igdbId: 12  },
-  { name: 'Acción',      igdbId: 4   },
-  { name: 'Aventura',    igdbId: 31  },
-  { name: 'Indie',       igdbId: 32  },
-  { name: 'Shooter',     igdbId: 5   },
-  { name: 'Estrategia',  igdbId: 15  },
-  { name: 'Plataformas', igdbId: 8   },
-  { name: 'Terror',      igdbId: 19  },
-  { name: 'Deportes',    igdbId: 14  },
-  { name: 'Simulación',  igdbId: 13  },
+  { name: 'RPG',           igdbId: 12 },
+  { name: 'Acción',        igdbId: 4  },
+  { name: 'Aventura',      igdbId: 31 },
+  { name: 'Indie',         igdbId: 32 },
+  { name: 'Shooter',       igdbId: 5  },
+  { name: 'Estrategia',    igdbId: 15 },
+  { name: 'Plataformas',   igdbId: 8  },
+  { name: 'Terror',        igdbId: 19 },
+  { name: 'Deportes',      igdbId: 14 },
+  { name: 'Simulación',    igdbId: 13 },
+  { name: 'Lucha',         igdbId: 6  },
+  { name: 'Puzle',         igdbId: 9  },
+  { name: 'Musical',       igdbId: 7  },
+  { name: 'Carreras',      igdbId: 10 },
+  { name: 'Rol Táctico',   igdbId: 11 },
+  { name: 'Visual Novel',  igdbId: 34 },
+  { name: 'Point & Click', igdbId: 2  },
 ]
 
-const GAMES_PER_GENRE = 20
+const GAMES_PER_GENRE = 30 // subimos de 20 a 30
 
 // ── Auth Twitch ────────────────────────────────────────────────
 async function getTwitchToken(): Promise<string> {
@@ -55,8 +62,8 @@ async function fetchGamesByGenre(
              first_release_date, genres.name,
              platforms.name, rating, rating_count;
       where genres = (${genreId})
-        & rating >= 75
-        & rating_count >= 50
+        & rating >= 70
+        & rating_count >= 30
         & version_parent = null
         & cover != null;
       sort rating_count desc;
@@ -138,7 +145,10 @@ async function main() {
       }
 
       const coverUrl = game.cover?.url
-        ? `https://${game.cover.url.replace(/^https?:\/\//, '').replace(/^\/\//, '').replace('t_thumb', 't_cover_big')}`
+        ? `https://${game.cover.url
+            .replace(/^https?:\/\//, '')
+            .replace(/^\/\//, '')
+            .replace('t_thumb', 't_cover_big')}`
         : null
 
       const releaseDate = game.first_release_date
@@ -158,16 +168,16 @@ async function main() {
       try {
         await prisma.game.create({
           data: {
-            title:       game.name,
+            title:           game.name,
             slug,
-            description: descriptionES,
-            imageUrl:    coverUrl,
+            description:     descriptionES,
+            imageUrl:        coverUrl,
             releaseDate,
-            genre:       genres,
-            platform:    platforms,
-            igdbId:      game.id,
-            status:      'APPROVED',
-            igdbRating:      game.rating      ?? null,
+            genre:           genres,
+            platform:        platforms,
+            igdbId:          game.id,
+            status:          'APPROVED',
+            igdbRating:      game.rating       ?? null,
             igdbRatingCount: game.rating_count ?? null,
           },
         })

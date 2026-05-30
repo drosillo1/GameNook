@@ -14,8 +14,8 @@ import { Analytics } from '@vercel/analytics/react' // <-- Importamos las analí
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const inter    = Inter({ subsets: ['latin'] })
-const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-display', weight: ['400','700','900'] })
-const rajdhani = Rajdhani({ subsets: ['latin'], variable: '--font-body',    weight: ['400','500','600'] })
+const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-display', weight: ['400','700','900'], display: 'swap', })
+const rajdhani = Rajdhani({ subsets: ['latin'], variable: '--font-body',    weight: ['400','500','600'],display: 'swap', })
 
 export const metadata: Metadata = {
   metadataBase: new URL(

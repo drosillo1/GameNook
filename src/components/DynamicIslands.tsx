@@ -9,5 +9,5 @@ export const HeroCharacters = dynamic(
 
 export const RecentReviews = dynamic(
   () => import('@/components/RecentReviews'),
-  { ssr: false }
+  { ssr: true  }
 )

@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { SearchIcon, XIcon } from 'lucide-react'
 import { translateGenre } from '@/lib/genres'
 
@@ -104,11 +105,12 @@ function GameCard({ game }: { game: Game }) {
     >
       <div className="aspect-[3/4] bg-gn-surface relative overflow-hidden">
         {game.imageUrl ? (
-          <img
+          <Image
             src={game.imageUrl}
             alt={game.title}
-            className="w-full h-full object-cover group-hover:scale-105
-                       transition-transform duration-300"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             loading="lazy"
           />
         ) : (
