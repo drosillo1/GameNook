@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic'
 
 export const HeroCharacters = dynamic(
   () => import('@/components/HeroCharacters'),
-  { ssr: false }
+  { ssr: true } 
 )
 
 export const RecentReviews = dynamic(

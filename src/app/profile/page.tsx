@@ -72,45 +72,50 @@ export default async function ProfilePage() {
       <div className="max-w-5xl mx-auto px-6 py-10">
 
         {/* ── HEADER ── */}
-        <div className="bg-gn-card border border-white/[0.06] rounded-2xl p-8 mb-6
-                        flex items-center gap-6 flex-wrap">
-          {user.image ? (
-            <img
-              src={user.image}
-              alt={user.name ?? 'image'}
-              className="w-20 h-20 rounded-full object-cover ring-2 ring-gn-primary/30"
-            />
-          ) : (
-            <div className="w-20 h-20 rounded-full bg-gn-primary/20 flex items-center
-                            justify-center text-gn-primary text-3xl font-black">
-              {user.name?.[0] ?? '?'}
-            </div>
-          )}
+        <div className="bg-gn-card border border-white/[0.06] rounded-2xl p-6 mb-6">
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            {user.image ? (
+              <img
+                src={user.image}
+                alt={user.name ?? 'image'}
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover
+                   ring-2 ring-gn-primary/30 flex-shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gn-primary/20
+                      flex items-center justify-center text-gn-primary
+                      text-2xl sm:text-3xl font-black flex-shrink-0">
+                {user.name?.[0] ?? '?'}
+              </div>
+            )}
 
-          <div className="flex-1 min-w-0">
-            <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">
-              // Perfil de gamer
-            </p>
-            <h1 className="font-display font-black text-3xl text-gn-text truncate">
-              {user.name ?? 'Gamer'}
-            </h1>
-            <p className="text-gn-muted text-sm mt-0.5">{user.email}</p>
-            <div className="flex items-center gap-1.5 mt-2 text-gn-muted text-xs">
-              <CalendarIcon className="w-3.5 h-3.5" />
-              Miembro desde {memberSince}
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">
+        // Perfil de gamer
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="font-display font-black text-2xl sm:text-3xl text-gn-text truncate">
+                  {user.name ?? 'Gamer'}
+                </h1>
+                {(user.role === 'ADMIN' || user.role === 'MODERATOR') && (
+                  <span className={`px-2.5 py-1 rounded-lg border text-xs font-bold uppercase
+                           tracking-widest flex-shrink-0 ${user.role === 'ADMIN'
+                      ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
+                      : 'bg-blue-500/10   border-blue-500/30   text-blue-400'
+                    }`}>
+                    {user.role === 'ADMIN' ? '👑 Admin' : '🛡 Moderador'}
+                  </span>
+                )}
+              </div>
+              <p className="text-gn-muted text-sm mt-0.5 truncate">{user.email}</p>
+              <div className="flex items-center gap-1.5 mt-2 text-gn-muted text-xs">
+                <CalendarIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                Miembro desde {memberSince}
+              </div>
             </div>
           </div>
-
-          {(user.role === 'ADMIN' || user.role === 'MODERATOR') && (
-            <div className={`px-3 py-1.5 rounded-lg border text-xs font-bold uppercase
-                             tracking-widest flex-shrink-0 ${
-              user.role === 'ADMIN'
-                ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
-                : 'bg-blue-500/10   border-blue-500/30   text-blue-400'
-            }`}>
-              {user.role === 'ADMIN' ? '👑 Admin' : '🛡 Moderador'}
-            </div>
-          )}
         </div>
 
         {/* ── STATS RESEÑAS ── */}
