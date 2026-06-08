@@ -10,7 +10,6 @@ import { IGDBGame } from '@/lib/igdb'
 import { translateToSpanish } from '@/lib/translate'
 import { toast } from '@/lib/toast'
 
-// ── Helpers UI ─────────────────────────────────────────────────
 const inputLocked =
   'w-full bg-white/[0.02] border border-white/[0.04] rounded-lg px-3.5 py-2.5 ' +
   'text-gn-muted text-sm cursor-not-allowed select-none'
@@ -45,7 +44,6 @@ function LockedField({ label, value, placeholder = '—' }: {
   )
 }
 
-// ── Page ───────────────────────────────────────────────────────
 export default function AddGamePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -57,7 +55,9 @@ export default function AddGamePage() {
   const [igdbId, setIgdbId] = useState<number | null>(null)
   const [igdbSelected, setIgdbSelected] = useState(false)
 
-  // Descripción original de IGDB (ya traducida) para detectar cambios
+  // Juego duplicado — { title, slug } si ya existe en la BD
+  const [duplicateGame, setDuplicateGame] = useState<{ title: string; slug: string } | null>(null)
+
   const [originalDescription, setOriginalDescription] = useState('')
   const [description, setDescription] = useState('')
 
@@ -69,7 +69,6 @@ export default function AddGamePage() {
     platform: [] as string[],
   })
 
-  // useEffect para el autocompletado desde URL
   useEffect(() => {
     const igdbIdParam = searchParams.get('igdbId')
     if (!igdbIdParam || isNaN(parseInt(igdbIdParam))) return
@@ -86,7 +85,6 @@ export default function AddGamePage() {
           ? new Date(game.first_release_date * 1000).toISOString().split('T')[0]
           : ''
 
-        // La URL ya viene normalizada desde igdb.ts
         const coverUrl = game.cover?.url ?? ''
 
         const translated = game.summary
@@ -107,7 +105,7 @@ export default function AddGamePage() {
       })
       .catch(console.error)
       .finally(() => setIsTranslating(false))
-  }, [searchParams]) // Se ejecuta al montar o si cambian los params
+  }, [searchParams])
 
   if (status === 'loading') {
     return (
@@ -130,7 +128,21 @@ export default function AddGamePage() {
 
   // ── Selección IGDB ──────────────────────────────────────────
   const handleIGDBSelect = async (game: IGDBGame) => {
+    setDuplicateGame(null)
     setIsTranslating(true)
+
+    // Comprobar si ya existe en la BD antes de traducir
+    try {
+      const checkRes = await fetch(`/api/games/by-igdb-ids?ids=${game.id}`)
+      const checkData = await checkRes.json()
+      if (Array.isArray(checkData) && checkData.length > 0) {
+        setDuplicateGame({ title: game.name, slug: checkData[0].slug })
+        setIsTranslating(false)
+        return
+      }
+    } catch {
+      // Si falla la comprobación, dejamos continuar normalmente
+    }
 
     const releaseDate = game.first_release_date
       ? new Date(game.first_release_date * 1000).toISOString().split('T')[0]
@@ -161,10 +173,10 @@ export default function AddGamePage() {
   const handleClearIGDB = () => {
     setIgdbId(null)
     setIgdbSelected(false)
+    setDuplicateGame(null)
     setOriginalDescription('')
     setDescription('')
     setFormData({ title: '', imageUrl: '', releaseDate: '', genre: [], platform: [] })
-    // Opcional: Limpiar el query param de la URL para evitar recargas accidentales
     router.replace('/games/add')
   }
 
@@ -264,6 +276,42 @@ export default function AddGamePage() {
                       Traduciendo descripción al español...
                     </p>
                   </div>
+                ) : duplicateGame ? (
+                  /* ── Aviso duplicado ── */
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 px-4 py-3.5
+                                    bg-yellow-500/8 border border-yellow-500/20 rounded-lg">
+                      <span className="text-yellow-400 text-base flex-shrink-0 mt-px">⚠</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-yellow-400 text-sm font-semibold">
+                          Este juego ya está en GameNook
+                        </p>
+                        <p className="text-yellow-400/70 text-xs mt-0.5">
+                          {duplicateGame.title} ya fue añadido anteriormente.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/games/${duplicateGame.slug}`}
+                        className="flex-1 flex items-center justify-center gap-1.5
+                                   bg-gn-primary hover:bg-gn-primary-dark text-white
+                                   font-bold uppercase tracking-wider text-xs
+                                   px-4 py-2.5 rounded-lg transition-all duration-200"
+                      >
+                        Ver {duplicateGame.title} →
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleClearIGDB}
+                        className="px-4 py-2.5 border border-white/[0.06] hover:border-gn-muted
+                                   text-gn-muted hover:text-gn-text font-semibold uppercase
+                                   tracking-wider text-xs rounded-lg transition-all duration-150"
+                      >
+                        Buscar otro
+                      </button>
+                    </div>
+                  </div>
                 ) : !igdbSelected ? (
                   <>
                     <p className="text-gn-muted text-xs mb-3 leading-relaxed">
@@ -304,7 +352,6 @@ export default function AddGamePage() {
               {/* ── Datos del juego — solo visibles tras seleccionar ── */}
               {igdbSelected && !isTranslating && (
                 <>
-                  {/* Campos bloqueados */}
                   <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 space-y-4">
                     <div className="flex items-center justify-between">
                       <SectionLabel>Información del juego</SectionLabel>
@@ -331,7 +378,6 @@ export default function AddGamePage() {
                       />
                     </div>
 
-                    {/* Géneros — bloqueados como pills */}
                     <div>
                       <label className="flex items-center gap-1.5 text-gn-muted text-xs
                                          font-semibold uppercase tracking-widest mb-2">
@@ -356,7 +402,6 @@ export default function AddGamePage() {
                       )}
                     </div>
 
-                    {/* Plataformas — bloqueadas como pills */}
                     <div>
                       <label className="flex items-center gap-1.5 text-gn-muted text-xs
                                          font-semibold uppercase tracking-widest mb-2">
@@ -382,14 +427,12 @@ export default function AddGamePage() {
                     </div>
                   </div>
 
-                  {/* Descripción — único campo editable */}
                   <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6">
                     <div className="flex items-start justify-between mb-1.5">
                       <label className="text-gn-muted text-xs font-semibold
                                          uppercase tracking-widest">
                         Descripción
                       </label>
-                      {/* Aviso si fue modificada */}
                       {descriptionModified && !isAdmin && (
                         <span className="flex items-center gap-1 text-yellow-400
                                           text-[11px] font-semibold">
@@ -438,7 +481,7 @@ export default function AddGamePage() {
                   ) : (
                     <div className="flex flex-col items-center gap-1.5 text-gn-muted">
                       <span className="text-3xl">🎮</span>
-                      {!igdbSelected && (
+                      {!igdbSelected && !duplicateGame && (
                         <span className="text-xs text-center px-4 leading-relaxed opacity-60">
                           Busca un juego para continuar
                         </span>
@@ -447,7 +490,6 @@ export default function AddGamePage() {
                   )}
                 </div>
 
-                {/* Estado de publicación */}
                 {igdbSelected && (
                   <div className={`px-3.5 py-3 rounded-lg border text-xs leading-relaxed mb-4
                                    transition-all duration-200
@@ -468,7 +510,7 @@ export default function AddGamePage() {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || !igdbSelected || isTranslating}
+                  disabled={isSubmitting || !igdbSelected || isTranslating || !!duplicateGame}
                   className="w-full bg-gn-primary hover:bg-gn-primary-dark
                              disabled:opacity-40 disabled:cursor-not-allowed
                              text-white font-bold uppercase tracking-wider text-sm
