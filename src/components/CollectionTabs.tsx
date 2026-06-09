@@ -1,7 +1,6 @@
-// src/components/CollectionTabs.tsx
 'use client'
 
-import { useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { PlayIcon, CheckIcon, ClockIcon, XIcon } from 'lucide-react'
 import { RatingIcon } from './RatingIcon'
@@ -29,10 +28,10 @@ type Grouped = {
 }
 
 const TABS = [
-  { key: 'PLAYING',      label: 'Jugando',     icon: <PlayIcon  className="w-3.5 h-3.5" />, color: 'text-green-400',  active: 'border-green-400  text-green-400'  },
-  { key: 'COMPLETED',    label: 'Completados', icon: <CheckIcon className="w-3.5 h-3.5" />, color: 'text-purple-400', active: 'border-purple-400 text-purple-400' },
-  { key: 'WANT_TO_PLAY', label: 'Pendientes',  icon: <ClockIcon className="w-3.5 h-3.5" />, color: 'text-blue-400',   active: 'border-blue-400   text-blue-400'   },
-  { key: 'DROPPED',      label: 'Abandonados', icon: <XIcon     className="w-3.5 h-3.5" />, color: 'text-red-400',    active: 'border-red-400    text-red-400'    },
+  { key: 'PLAYING',      label: 'Jugando',     icon: <PlayIcon  className="w-3.5 h-3.5" />, active: 'border-green-400  text-green-400'  },
+  { key: 'COMPLETED',    label: 'Completados', icon: <CheckIcon className="w-3.5 h-3.5" />, active: 'border-purple-400 text-purple-400' },
+  { key: 'WANT_TO_PLAY', label: 'Pendientes',  icon: <ClockIcon className="w-3.5 h-3.5" />, active: 'border-blue-400   text-blue-400'   },
+  { key: 'DROPPED',      label: 'Abandonados', icon: <XIcon     className="w-3.5 h-3.5" />, active: 'border-red-400    text-red-400'    },
 ] as const
 
 function getRatingMeta(rating: number) {
@@ -55,7 +54,6 @@ function GameCard({ entry }: { entry: CollectionEntry }) {
                  hover:border-gn-primary/30 hover:-translate-y-1 transition-all duration-200
                  flex flex-col"
     >
-      {/* Imagen */}
       <div className="aspect-video bg-gn-surface relative overflow-hidden">
         {game.imageUrl ? (
           <img
@@ -69,7 +67,6 @@ function GameCard({ entry }: { entry: CollectionEntry }) {
           </div>
         )}
 
-        {/* Badge reseña propia */}
         {meta && game.userReview && (
           <div
             className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1
@@ -84,14 +81,12 @@ function GameCard({ entry }: { entry: CollectionEntry }) {
         )}
       </div>
 
-      {/* Body */}
       <div className="p-4 flex flex-col flex-1">
         <h3 className="font-display font-bold text-sm text-gn-text truncate
                        group-hover:text-gn-primary transition-colors mb-1">
           {game.title}
         </h3>
 
-        {/* Géneros */}
         {game.genre.length > 0 && (
           <div className="flex gap-1 flex-wrap mb-2">
             {game.genre.slice(0, 2).map(g => (
@@ -106,7 +101,6 @@ function GameCard({ entry }: { entry: CollectionEntry }) {
           </div>
         )}
 
-        {/* Footer */}
         <div className="mt-auto pt-2 border-t border-white/[0.04] flex items-center justify-between">
           <span className="text-xs text-gn-muted">
             {game._count.reviews} reseñas
@@ -128,21 +122,23 @@ function GameCard({ entry }: { entry: CollectionEntry }) {
 }
 
 export default function CollectionTabs({ grouped }: { grouped: Grouped }) {
-  const [active, setActive] = useState<keyof Grouped>('PLAYING')
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const validTabs = ['PLAYING', 'COMPLETED', 'WANT_TO_PLAY', 'DROPPED']
+  const active = (validTabs.includes(tabParam ?? '') ? tabParam : 'PLAYING') as keyof Grouped
 
   const games = grouped[active]
 
   return (
     <div>
-      {/* Tab bar */}
       <div className="flex gap-0 border-b border-white/[0.06] mb-6 overflow-x-auto">
         {TABS.map(tab => {
           const count    = grouped[tab.key].length
           const isActive = active === tab.key
           return (
-            <button
+            <Link
               key={tab.key}
-              onClick={() => setActive(tab.key)}
+              href={`/collection?tab=${tab.key}`}
               className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase
                           tracking-wider border-b-2 transition-all duration-150 whitespace-nowrap
                           ${isActive
@@ -156,12 +152,11 @@ export default function CollectionTabs({ grouped }: { grouped: Grouped }) {
                                 ${isActive ? 'bg-white/10' : 'bg-white/[0.04]'}`}>
                 {count}
               </span>
-            </button>
+            </Link>
           )
         })}
       </div>
 
-      {/* Grid */}
       {games.length === 0 ? (
         <div className="text-center py-16 text-gn-muted">
           <div className="text-4xl mb-3">🎮</div>
