@@ -35,11 +35,7 @@ async function getUserCollection(userId: string) {
   }))
 }
 
-export default async function CollectionPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>
-}) {
+export default async function CollectionPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
 
@@ -52,11 +48,6 @@ export default async function CollectionPage({
     DROPPED:      entries.filter(e => e.status === 'DROPPED'),
   }
 
-  const { tab } = await searchParams
-  const validTabs = ['PLAYING', 'COMPLETED', 'WANT_TO_PLAY', 'DROPPED']
-  const initialTab = validTabs.includes(tab ?? '')
-    ? (tab as keyof typeof grouped)
-    : 'PLAYING'
 
   return (
     <div className="min-h-screen bg-gn-bg font-body">
@@ -114,7 +105,7 @@ export default async function CollectionPage({
             </Link>
           </div>
         ) : (
-          <CollectionTabs grouped={grouped} initialTab={initialTab} />
+          <CollectionTabs grouped={grouped} />
         )}
       </div>
     </div>
