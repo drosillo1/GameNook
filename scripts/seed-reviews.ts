@@ -179,8 +179,7 @@ function weightedRating(base: number, gameGenres: string[], userGenres: string[]
   return Math.min(10, Math.max(1, base + boost + variance))
 }
 
-function maybeText(slug: string, userName: string): string | null {
-  // ~35% de probabilidad de tener texto
+function maybeText(slug: string): string | null {
   if (Math.random() > 0.35) return null
   const options = REVIEW_TEXTS[slug]
   if (!options || options.length === 0) return null
@@ -226,7 +225,7 @@ async function main() {
 
     for (const game of selection) {
       const rating  = weightedRating(user.ratingBias, game.genre, user.favoriteGenres)
-      const content = maybeText(game.slug, user.name)
+      const content = maybeText(game.slug)
 
       try {
         await prisma.review.create({

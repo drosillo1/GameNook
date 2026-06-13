@@ -1,4 +1,3 @@
-// src/app/collection/page.tsx
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -35,7 +34,11 @@ async function getUserCollection(userId: string) {
   }))
 }
 
-export default async function CollectionPage() {
+export default async function CollectionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/auth/signin')
 
@@ -48,12 +51,16 @@ export default async function CollectionPage() {
     DROPPED:      entries.filter(e => e.status === 'DROPPED'),
   }
 
+  const { tab } = await searchParams
+  const validTabs = ['PLAYING', 'COMPLETED', 'WANT_TO_PLAY', 'DROPPED']
+  const initialTab = validTabs.includes(tab ?? '')
+    ? (tab as keyof typeof grouped)
+    : 'PLAYING'
 
   return (
     <div className="min-h-screen bg-gn-bg font-body">
       <div className="max-w-6xl mx-auto px-6 py-10">
 
-        {/* Header */}
         <div className="mb-8">
           <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">
             // Tu colección
@@ -66,13 +73,12 @@ export default async function CollectionPage() {
           </p>
         </div>
 
-        {/* Stats rápidas */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {[
-            { label: 'Jugando',     key: 'PLAYING',      count: grouped.PLAYING.length,      color: 'text-green-400',  bg: 'bg-green-500/5  border-green-500/15',  icon: '▶' },
-            { label: 'Completados', key: 'COMPLETED',    count: grouped.COMPLETED.length,    color: 'text-purple-400', bg: 'bg-purple-500/5 border-purple-500/15', icon: '✓' },
-            { label: 'Pendientes',  key: 'WANT_TO_PLAY', count: grouped.WANT_TO_PLAY.length, color: 'text-blue-400',   bg: 'bg-blue-500/5   border-blue-500/15',   icon: '⏳' },
-            { label: 'Abandonados', key: 'DROPPED',      count: grouped.DROPPED.length,      color: 'text-red-400',    bg: 'bg-red-500/5    border-red-500/15',     icon: '✕' },
+            { label: 'Jugando',     key: 'PLAYING',      count: grouped.PLAYING.length,      color: 'text-green-400',  bg: 'bg-green-500/5  border-green-500/15'  },
+            { label: 'Completados', key: 'COMPLETED',    count: grouped.COMPLETED.length,    color: 'text-purple-400', bg: 'bg-purple-500/5 border-purple-500/15' },
+            { label: 'Pendientes',  key: 'WANT_TO_PLAY', count: grouped.WANT_TO_PLAY.length, color: 'text-blue-400',   bg: 'bg-blue-500/5   border-blue-500/15'   },
+            { label: 'Abandonados', key: 'DROPPED',      count: grouped.DROPPED.length,      color: 'text-red-400',    bg: 'bg-red-500/5    border-red-500/15'     },
           ].map(s => (
             <Link
               key={s.label}
@@ -85,7 +91,6 @@ export default async function CollectionPage() {
           ))}
         </div>
 
-        {/* Tabs con los juegos */}
         {entries.length === 0 ? (
           <div className="bg-gn-card border border-white/[0.06] rounded-xl p-16 text-center">
             <div className="text-5xl mb-4">🎮</div>
@@ -105,7 +110,11 @@ export default async function CollectionPage() {
             </Link>
           </div>
         ) : (
-          <CollectionTabs grouped={grouped} />
+          <CollectionTabs
+            key={initialTab}
+            grouped={grouped}
+            initialTab={initialTab}
+          />
         )}
       </div>
     </div>

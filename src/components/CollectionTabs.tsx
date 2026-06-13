@@ -1,6 +1,6 @@
 'use client'
 
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
 import { PlayIcon, CheckIcon, ClockIcon, XIcon } from 'lucide-react'
 import { RatingIcon } from './RatingIcon'
@@ -121,11 +121,11 @@ function GameCard({ entry }: { entry: CollectionEntry }) {
   )
 }
 
-export default function CollectionTabs({ grouped }: { grouped: Grouped }) {
-  const searchParams = useSearchParams()
-  const tabParam = searchParams.get('tab')
-  const validTabs = ['PLAYING', 'COMPLETED', 'WANT_TO_PLAY', 'DROPPED']
-  const active = (validTabs.includes(tabParam ?? '') ? tabParam : 'PLAYING') as keyof Grouped
+export default function CollectionTabs({ grouped, initialTab }: {
+  grouped: Grouped
+  initialTab?: keyof Grouped
+}) {
+  const [active, setActive] = useState<keyof Grouped>(initialTab ?? 'PLAYING')
 
   const games = grouped[active]
 
@@ -136,9 +136,9 @@ export default function CollectionTabs({ grouped }: { grouped: Grouped }) {
           const count    = grouped[tab.key].length
           const isActive = active === tab.key
           return (
-            <Link
+            <button
               key={tab.key}
-              href={`/collection?tab=${tab.key}`}
+              onClick={() => setActive(tab.key)}
               className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase
                           tracking-wider border-b-2 transition-all duration-150 whitespace-nowrap
                           ${isActive
@@ -152,7 +152,7 @@ export default function CollectionTabs({ grouped }: { grouped: Grouped }) {
                                 ${isActive ? 'bg-white/10' : 'bg-white/[0.04]'}`}>
                 {count}
               </span>
-            </Link>
+            </button>
           )
         })}
       </div>
