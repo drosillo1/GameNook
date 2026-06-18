@@ -18,20 +18,20 @@ const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-display', weig
 const rajdhani = Rajdhani({ subsets: ['latin'], variable: '--font-body',    weight: ['400','500','600'],display: 'swap', })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXTAUTH_URL ?? 'https://gamenook.es'
-  ),
+  metadataBase: new URL('https://www.gamenook.es'),
   title: {
     default:  'GameNook — Reseñas de Videojuegos',
     template: '%s — GameNook',
   },
   description: 'Descubre, reseña y comparte tus videojuegos favoritos con la comunidad gamer.',
   openGraph: {
+    title: 'GameNook — Reseñas de Videojuegos',
+    description: 'Descubre, reseña y comparte tus videojuegos favoritos con la comunidad gamer.',
+    url: 'https://www.gamenook.es',
     siteName: 'GameNook',
     locale:   'es_ES',
     type:     'website',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630 }],
-    
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630 }], 
   },
   twitter: {
     card: 'summary_large_image',
