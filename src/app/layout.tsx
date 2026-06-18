@@ -30,9 +30,12 @@ export const metadata: Metadata = {
     siteName: 'GameNook',
     locale:   'es_ES',
     type:     'website',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    
   },
   twitter: {
     card: 'summary_large_image',
+    images: ['/og-image.png'],
   },
 }
 

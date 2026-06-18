@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import { GamepadIcon, ChevronDownIcon, ShieldIcon, MenuIcon, XIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 // ── Avatar con iniciales ───────────────────────────────────────
 function UserAvatar({ image, name, email, size = 6 }: {
@@ -77,9 +78,13 @@ export default function Navigation() {
 
         {/* ── Logo ── */}
         <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-          <div className="w-7 h-7 bg-gn-primary rounded-md flex items-center justify-center">
-            <GamepadIcon className="w-4 h-4 text-white" />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="GameNook"
+            width={44}
+            height={44}
+            className="w-12 h-12 object-contain"
+          />
           <span className="font-display font-black text-lg tracking-wide">
             <span className="text-gn-text">Game</span>
             <span className="text-gn-primary">Nook</span>
