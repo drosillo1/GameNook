@@ -116,7 +116,7 @@ export default async function Home() {
                        max-w-xl mx-auto mb-10 font-medium"
           >
             Puntúa, descubre y comparte los videojuegos que te han marcado.
-            Una comunidad hecha por gamers, para gamers.
+            Gestiona tu colección virtual y descubre nuevos títulos.
           </p>
 
           <div className="flex gap-3 justify-center flex-wrap">
