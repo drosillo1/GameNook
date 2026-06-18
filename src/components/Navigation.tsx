@@ -74,18 +74,18 @@ export default function Navigation() {
 
   return (
     <header className="sticky top-0 z-50 bg-gn-bg/85 backdrop-blur-xl border-b border-white/[0.06]">
-      <div className="max-w-6xl mx-auto px-6 flex items-center justify-between h-[60px]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-[60px] gap-2">
 
         {/* ── Logo ── */}
-        <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
+        <Link href="/" className="flex items-center gap-2 min-w-0 flex-shrink" onClick={() => setMobileOpen(false)}>
           <Image
             src="/logo.png"
             alt="GameNook"
             width={44}
             height={44}
-            className="w-12 h-12 object-contain"
+            className="w-9 h-9 sm:w-12 sm:h-12 object-contain flex-shrink-0"
           />
-          <span className="font-display font-black text-lg tracking-wide">
+          <span className="font-display font-black text-base sm:text-lg tracking-wide truncate">
             <span className="text-gn-text">Game</span>
             <span className="text-gn-primary">Nook</span>
           </span>
@@ -225,14 +225,14 @@ export default function Navigation() {
               )}
             </div>
           ) : (
-            <Link
-              href="/auth/signin"
-              className="bg-gn-primary hover:bg-gn-primary-dark text-white text-sm font-bold
-                         uppercase tracking-wider px-5 py-2 rounded-lg shadow-gn-red
-                         transition-all duration-200 hover:-translate-y-0.5"
-            >
-              ▶ Entrar
-            </Link>
+              <Link
+                href="/auth/signin"
+                className="flex-shrink-0 bg-gn-primary hover:bg-gn-primary-dark text-white text-xs sm:text-sm font-bold
+             uppercase tracking-wider px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg shadow-gn-red
+             transition-all duration-200 hover:-translate-y-0.5 whitespace-nowrap"
+              >
+                ▶ Entrar
+              </Link>
           )}
 
           {/* ── Hamburguesa ── */}
