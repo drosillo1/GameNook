@@ -164,7 +164,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
         {/* Content Grid */}
         <div className="grid lg:grid-cols-[1fr_2fr] gap-6 mb-8">
-          <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 sticky top-20 h-fit">
+          <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 lg:sticky lg:top-20 lg:h-fit">
             <h2 className="font-display font-bold text-sm tracking-wide text-gn-text mb-5">{userReview ? 'Tu reseña' : 'Escribe una reseña'}</h2>
             {session ? (
               <ReviewForm key={userReview?.id ?? 'new'} gameId={game.id} existingReview={userReview} />
