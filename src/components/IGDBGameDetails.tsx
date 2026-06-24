@@ -1,4 +1,4 @@
-// src/components/IGDBGameDetails.tsx
+// src//components/IGDBGameDetails.tsx
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
