@@ -9,6 +9,7 @@ import { Counter } from '@/components/Counter'
 import dynamic from 'next/dynamic'
 import { HeroCharacters, RecentReviews } from '@/components/DynamicIslands'
 
+export const revalidate = 3600 
 
 const features = [
   {
@@ -62,7 +63,10 @@ const getRecentReviews = unstable_cache(
         content: { not: null },
         game: { status: 'APPROVED' },
       },
-      include: {
+      select: {
+        id: true,
+        rating: true,
+        content: true,
         game: { select: { title: true, slug: true, imageUrl: true } },
         user: { select: { name: true, image: true } },
       },
@@ -71,7 +75,7 @@ const getRecentReviews = unstable_cache(
     })
   },
   ['recent-reviews'],
-  { revalidate: 120 }
+  { revalidate: 3600 }
 )
 
 export default async function Home() {

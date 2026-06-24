@@ -37,7 +37,7 @@ interface Props {
   reviews: Review[]
 }
 
-function ReviewCard({ review }: { review: Review }) {
+function ReviewCard({ review, index }: { review: Review; index: number }) {
   const meta = RATING_META[review.rating] ?? RATING_META[5]
 
   return (
@@ -56,6 +56,7 @@ function ReviewCard({ review }: { review: Review }) {
             fill
             className="object-cover"
             sizes="288px"
+            priority={index < 2}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -81,7 +82,7 @@ function ReviewCard({ review }: { review: Review }) {
               {review.user.image ? (
                 <Image
                   src={review.user.image}
-                  alt={review.user.name ?? ''}
+                  alt={review.user.name ?? 'Avatar del usuario'}
                   fill
                   className="object-cover"
                   sizes="28px"
@@ -145,7 +146,7 @@ export default function RecentReviews({ reviews }: Props) {
         }}
       >
         {doubled.map((review, i) => (
-          <ReviewCard key={`${review.id}-${i}`} review={review} />
+          <ReviewCard key={`${review.id}-${i}`} review={review} index={i} />
         ))}
       </div>
     </div>
