@@ -18,40 +18,21 @@ interface GameDetailPageProps {
   params: Promise<{ slug: string }>
 }
 
-// ── Datos del juego — cacheados, iguales para todos los usuarios ──
+// ── Datos del juego cacheados por 24 horas ──
 const getGameCached = (slug: string) => unstable_cache(
   async () => {
     return prisma.game.findUnique({
       where: { slug },
       select: {
-        id:          true,
-        title:       true,
-        slug:        true,
-        description: true,
-        imageUrl:    true,
-        releaseDate: true,
-        genre:       true,
-        platform:    true,
-        igdbId:      true,
+        id: true, title: true, slug: true, description: true, 
+        imageUrl: true, releaseDate: true, genre: true, 
+        platform: true, igdbId: true,
       },
     })
   },
-  [`game-detail-${slug}`],
-  { revalidate: 300 } // 5 minutos
+  ['game-detail', slug],
+  { revalidate: 86400, tags: [`game-${slug}`] } 
 )()
-
-// ── Reseñas — sin caché, cambian con frecuencia ──
-async function getGameReviews(gameId: string) {
-  return prisma.review.findMany({
-    where: { gameId },
-    include: {
-      user: {
-        select: { id: true, name: true, email: true, image: true },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-}
 
 function calcStats(reviews: any[]) {
   const total = reviews.length
@@ -65,19 +46,24 @@ function calcStats(reviews: any[]) {
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const { slug } = await params
 
-  // Cargamos en paralelo — el juego cacheado + sesión + reseñas frescas
-  const [game, session] = await Promise.all([
+  // 1. Cargamos todo en paralelo para máxima velocidad
+  const [game, session, reviews] = await Promise.all([
     getGameCached(slug),
     getServerSession(authOptions),
+    prisma.review.findMany({
+      where: { game: { slug } },
+      select: {
+        id: true, rating: true, content: true, createdAt: true, updatedAt: true, userId: true,
+        user: { select: { id: true, name: true, email: true, image: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+    })
   ])
 
   if (!game) notFound()
 
-  const reviews    = await getGameReviews(game.id)
-  const stats      = calcStats(reviews)
-  const userReview = session
-    ? reviews.find(r => r.userId === session.user?.id)
-    : null
+  const stats = calcStats(reviews)
+  const userReview = session ? reviews.find(r => r.userId === session.user?.id) : null
   const ratingData = getRatingData(Math.round(stats.average) || 5)
 
   const reviewsWithUsernames = reviews.map(r => ({
@@ -93,37 +79,22 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   return (
     <div className="min-h-screen bg-gn-bg font-body">
       <div className="max-w-7xl mx-auto px-6 py-10">
-
-        {/* ── Back ── */}
-        <Link
-          href="/games"
-          className="inline-flex items-center gap-1.5 text-gn-muted hover:text-gn-text
-                     text-xs uppercase tracking-widest font-semibold mb-8 transition-colors"
-        >
+        
+        {/* Back Link */}
+        <Link href="/games" className="inline-flex items-center gap-1.5 text-gn-muted hover:text-gn-text text-xs uppercase tracking-widest font-semibold mb-8 transition-colors">
           <ChevronLeft className="w-3.5 h-3.5" />
           Volver a juegos
         </Link>
 
-        {/* ── HERO ── */}
-        <div className="grid md:grid-cols-[240px_1fr] bg-gn-card border border-white/[0.06]
-                        rounded-2xl overflow-hidden mb-8">
-
+        {/* HERO */}
+        <div className="grid md:grid-cols-[240px_1fr] bg-gn-card border border-white/[0.06] rounded-2xl overflow-hidden mb-8">
           <div className="relative bg-gn-surface">
             <div className="aspect-[3/4] w-full relative">
               {game.imageUrl ? (
-                <Image
-                  src={game.imageUrl}
-                  alt={game.title}
-                  fill
-                  priority
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 240px"
-                />
+                <Image src={game.imageUrl} alt={game.title} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 240px" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center
-                                justify-center gap-2 text-gn-muted">
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gn-muted">
                   <span className="text-5xl">🎮</span>
-                  <span className="text-xs uppercase tracking-widest">Sin imagen</span>
                 </div>
               )}
             </div>
@@ -131,17 +102,8 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
           <div className="p-8 flex flex-col gap-4 min-w-0">
             <div>
-              <p className="text-gn-primary text-xs font-semibold uppercase
-                            tracking-widest mb-1">
-                // Detalle del juego
-              </p>
-              <h1
-                className="font-display font-black text-3xl md:text-4xl
-                           text-gn-text leading-tight"
-                style={{ textShadow: '0 0 30px rgba(230,57,70,0.2)' }}
-              >
-                {game.title}
-              </h1>
+              <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">// Detalle del juego</p>
+              <h1 className="font-display font-black text-3xl md:text-4xl text-gn-text leading-tight">{game.title}</h1>
             </div>
 
             <div className="flex flex-wrap gap-3 text-sm text-gn-muted">
@@ -155,211 +117,77 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 <span className="flex items-center gap-1.5 min-w-0">
                   <Monitor className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="truncate">{game.platform.slice(0, 4).join(' · ')}</span>
-                  {game.platform.length > 4 && (
-                    <span className="text-gn-subtle">+{game.platform.length - 4}</span>
-                  )}
                 </span>
               )}
             </div>
 
-            {game.genre.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {game.genre.map((g: string) => (
-                  <span
-                    key={g}
-                    className="px-2.5 py-1 bg-gn-primary/8 border border-gn-primary/20
-                               text-red-300 text-xs font-semibold uppercase
-                               tracking-wide rounded"
-                  >
-                    {g}
-                  </span>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {game.genre.map((g: string) => (
+                <span key={g} className="px-2.5 py-1 bg-gn-primary/8 border border-gn-primary/20 text-red-300 text-xs font-semibold uppercase tracking-wide rounded">
+                  {g}
+                </span>
+              ))}
+            </div>
 
             <div>
               <CollectionButton gameId={game.id} />
             </div>
 
             {game.description && (
-              <p className="text-gn-muted text-sm leading-relaxed line-clamp-4">
-                {game.description}
-              </p>
+              <p className="text-gn-muted text-sm leading-relaxed line-clamp-4">{game.description}</p>
             )}
 
-            <div className="mt-auto bg-gn-primary/5 border border-gn-primary/15
-                            rounded-xl p-4 flex items-center gap-6 flex-wrap">
+            {/* Stats Bar */}
+            <div className="mt-auto bg-gn-primary/5 border border-gn-primary/15 rounded-xl p-4 flex items-center gap-6 flex-wrap">
               <div className="flex-shrink-0">
                 <div className="flex items-baseline gap-1.5">
-                  <span
-                    className="font-display font-black text-5xl text-gn-primary"
-                    style={{ textShadow: '0 0 20px rgba(230,57,70,0.4)',
-                             fontFamily: 'Orbitron, monospace' }}
-                  >
+                  <span className="font-display font-black text-5xl text-gn-primary" style={{ fontFamily: 'Orbitron, monospace' }}>
                     {stats.average > 0 ? stats.average.toFixed(1) : '—'}
                   </span>
-                  {stats.average > 0 && (
-                    <span className="text-gn-muted text-lg">/10</span>
-                  )}
+                  {stats.average > 0 && <span className="text-gn-muted text-lg">/10</span>}
                 </div>
-                <div className={`text-sm font-semibold uppercase tracking-wider
-                                 mt-0.5 flex items-center gap-1.5 ${ratingData.tailwind}`}>
-                  <RatingIcon iconName={ratingData.iconName as any} size={18} />
+                <div className={`text-sm font-semibold uppercase tracking-wider mt-0.5 ${ratingData.tailwind}`}>
                   {stats.average > 0 ? ratingData.label : 'Sin reseñas'}
                 </div>
-                <div className="text-gn-muted text-xs mt-0.5">
-                  {stats.total} {stats.total === 1 ? 'reseña' : 'reseñas'}
-                </div>
               </div>
-
+              
               {stats.average > 0 && (
                 <div className="flex-1 min-w-[100px]">
                   <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width:      `${(stats.average / 10) * 100}%`,
-                        background: `linear-gradient(90deg,
-                          ${getRatingBarColor(Math.round(stats.average))}99,
-                          ${getRatingBarColor(Math.round(stats.average))})`,
-                      }}
-                    />
+                    <div className="h-full rounded-full" style={{ width: `${(stats.average / 10) * 100}%`, background: getRatingBarColor(Math.round(stats.average)) }} />
                   </div>
                 </div>
               )}
-
-              {stats.total > 0 && (
-                <div className="hidden lg:block space-y-0.5 flex-shrink-0">
-                  {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(r => {
-                    const pct = (stats.distribution[r - 1] / stats.total) * 100
-                    return (
-                      <div key={r} className="flex items-center gap-2">
-                        <span className="font-display text-[10px] font-bold
-                                         text-gn-muted w-5 text-right">
-                          {r}
-                        </span>
-                        <div className="w-16 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width:      `${pct}%`,
-                              background:  getRatingBarColor(r),
-                            }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-gn-muted w-3">
-                          {stats.distribution[r - 1]}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
             </div>
           </div>
         </div>
 
-        {/* ── CONTENT GRID ── */}
+        {/* Content Grid */}
         <div className="grid lg:grid-cols-[1fr_2fr] gap-6 mb-8">
-          <div>
-            <div className="bg-gn-card border border-white/[0.06] rounded-xl
-                            p-6 sticky top-20">
-              <h2 className="font-display font-bold text-sm tracking-wide
-                             text-gn-text mb-5">
-                {userReview ? 'Tu reseña' : 'Escribe una reseña'}
-              </h2>
-              {session ? (
-                <ReviewForm
-                  key={userReview?.id ?? 'new'}
-                  gameId={game.id}
-                  existingReview={userReview}
-                />
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-3">🎮</div>
-                  <p className="text-gn-muted text-sm mb-5 leading-relaxed">
-                    Inicia sesión para compartir tu opinión
-                  </p>
-                  <Link
-                    href="/auth/signin"
-                    className="inline-flex items-center gap-2 bg-gn-primary
-                               hover:bg-gn-primary-dark text-white text-sm font-bold
-                               uppercase tracking-wider px-5 py-2.5 rounded-lg
-                               shadow-gn-red transition-all duration-200"
-                  >
-                    ▶ Iniciar sesión
-                  </Link>
-                </div>
-              )}
-            </div>
+          <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 sticky top-20 h-fit">
+            <h2 className="font-display font-bold text-sm tracking-wide text-gn-text mb-5">{userReview ? 'Tu reseña' : 'Escribe una reseña'}</h2>
+            {session ? (
+              <ReviewForm key={userReview?.id ?? 'new'} gameId={game.id} existingReview={userReview} />
+            ) : (
+              <div className="text-center py-8">
+                <Link href="/auth/signin" className="inline-flex items-center gap-2 bg-gn-primary hover:bg-gn-primary-dark text-white text-sm font-bold uppercase tracking-wider px-5 py-2.5 rounded-lg">
+                  ▶ Iniciar sesión
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="bg-gn-card border border-white/[0.06] rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4
-                            border-b border-white/[0.06]">
-              <h2 className="font-display font-bold text-sm tracking-wide text-gn-text">
-                Reseñas de la comunidad
-              </h2>
-              <span className="text-gn-muted text-xs">
-                {stats.total} {stats.total === 1 ? 'reseña' : 'reseñas'}
-              </span>
+            <div className="px-6 py-4 border-b border-white/[0.06] flex justify-between items-center">
+              <h2 className="font-display font-bold text-sm tracking-wide text-gn-text">Reseñas</h2>
+              <span className="text-gn-muted text-xs">{stats.total} reseñas</span>
             </div>
-            <ReviewList
-              reviews={reviewsWithUsernames}
-              currentUserId={session?.user?.id}
-            />
+            <ReviewList reviews={reviewsWithUsernames} currentUserId={session?.user?.id} />
           </div>
         </div>
 
-        {game.igdbId && (
-          <IGDBGameDetails
-            igdbId={game.igdbId}
-            gameSlug={game.slug}
-          />
-        )}
-
+        {game.igdbId && <IGDBGameDetails igdbId={game.igdbId} gameSlug={game.slug} />}
       </div>
     </div>
   )
-}
-
-export async function generateMetadata({ params }: GameDetailPageProps) {
-  const { slug } = await params
-  const game     = await getGameCached(slug)
-
-  if (!game) {
-    return {
-      title:       'Juego no encontrado',
-      description: 'Este juego no existe en GameNook.',
-    }
-  }
-
-  const title       = game.title
-  const description = game.description
-    ? game.description.slice(0, 155).trimEnd() + (game.description.length > 155 ? '…' : '')
-    : `Reseñas y valoraciones de ${title} en GameNook. Descubre qué piensa la comunidad gamer.`
-
-  const ogImage = game.imageUrl
-    ? game.imageUrl.replace('/t_cover_big/', '/t_720p/')
-    : null
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type:   'article',
-      locale: 'es_ES',
-      ...(ogImage && {
-        images: [{ url: ogImage, width: 1280, height: 720, alt: `Portada de ${title}` }],
-      }),
-    },
-    twitter: {
-      card:        ogImage ? 'summary_large_image' : 'summary',
-      title,
-      description,
-      ...(ogImage && { images: [ogImage] }),
-    },
-  }
 }
