@@ -1,7 +1,7 @@
 // src/components/ReviewForm.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import RatingGaming from './RatingGaming'
 import { toast } from '@/lib/toast'
@@ -17,6 +17,21 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
   const [content,     setContent]     = useState(existingReview?.content ?? '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error,       setError]       = useState('')
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-resize: ajusta la altura al contenido real (scrollHeight)
+  const resizeTextarea = () => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
+
+  // Ajustar altura al montar (reseña existente) y cada vez que cambia el contenido
+  useEffect(() => {
+    resizeTextarea()
+  }, [content])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,6 +92,7 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
           Reseña
         </label>
         <textarea
+          ref={textareaRef}
           value={content}
           onChange={e => setContent(e.target.value)}
           disabled={isSubmitting}
@@ -87,7 +103,8 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
                      px-3.5 py-2.5 text-gn-text text-sm placeholder-gn-muted
                      focus:outline-none focus:border-gn-primary/40
                      focus:ring-1 focus:ring-gn-primary/20
-                     disabled:opacity-40 resize-none transition-all"
+                     disabled:opacity-40 resize-none transition-all
+                     overflow-hidden"
         />
         <p className="text-gn-muted text-xs mt-1 text-right">
           {content.length}/1000
