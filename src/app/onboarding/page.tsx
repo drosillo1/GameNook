@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { GamepadIcon } from 'lucide-react'
+import Image from 'next/image'
 
 export default function OnboardingPage() {
   const { data: session, update } = useSession()
@@ -54,9 +55,13 @@ export default function OnboardingPage() {
 
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-gn-primary rounded-md flex items-center justify-center">
-            <GamepadIcon className="w-5 h-5 text-white" />
-          </div>
+          <Image
+            src="/icon-512.png"
+            alt="GameNook"
+            width={32}
+            height={32}
+            className="w-8 h-8 object-contain"
+          />
           <span className="font-display font-black text-xl tracking-wide">
             <span className="text-gn-text">Game</span>
             <span className="text-gn-primary">Nook</span>

@@ -1,6 +1,7 @@
 // src/app/auth/verify-request/page.tsx
 import Link from 'next/link'
 import { GamepadIcon, MailIcon } from 'lucide-react'
+import Image from 'next/image'
 
 export default function VerifyRequest() {
   return (
@@ -20,9 +21,13 @@ export default function VerifyRequest() {
 
         {/* Logo */}
         <div className="inline-flex items-center gap-2 mb-8">
-          <div className="w-9 h-9 bg-gn-primary rounded-lg flex items-center justify-center">
-            <GamepadIcon className="w-5 h-5 text-white" />
-          </div>
+          <Image
+            src="/icon-512.png"
+            alt="GameNook"
+            width={36}
+            height={36}
+            className="w-9 h-9 object-contain"
+          />
           <span className="font-display font-black text-2xl tracking-wide">
             <span className="text-gn-text">Game</span>
             <span className="text-gn-primary">Nook</span>

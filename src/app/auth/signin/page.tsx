@@ -4,6 +4,7 @@ import { signIn, getSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState, useEffect, Suspense } from "react"
 import { GamepadIcon, MailIcon, LoaderIcon } from "lucide-react"
+import Image from 'next/image'
 
 // 1. Movemos toda tu lógica y UI a un componente interno
 function SignInForm() {
@@ -83,16 +84,15 @@ function SignInForm() {
       <div className="relative w-full max-w-sm">
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-9 h-9 bg-gn-primary rounded-lg flex items-center justify-center">
-              <GamepadIcon className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-display font-black text-2xl tracking-wide">
-              <span className="text-gn-text">Game</span>
-              <span className="text-gn-primary">Nook</span>
-            </span>
-          </div>
+        <div className="flex flex-col items-center text-center mb-8">
+          <Image
+            src="/icon-512.png"
+            alt="GameNook"
+            width={160}
+            height={160}
+            className="w-32 h-32 sm:w-40 sm:h-40 object-contain mb-6 drop-shadow-lg"
+            priority
+          />
           <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">
             // Acceso a la plataforma
           </p>

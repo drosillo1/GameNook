@@ -77,15 +77,20 @@ export default function Navigation() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-[60px] gap-2">
 
         {/* ── Logo ── */}
-        <Link href="/" className="flex items-center gap-2 min-w-0 flex-shrink" onClick={() => setMobileOpen(false)}>
+        <Link
+          href="/"
+          className="flex items-center gap-3 min-w-0 flex-shrink group"
+          onClick={() => setMobileOpen(false)}
+        >
           <Image
             src="/logo.png"
             alt="GameNook"
-            width={44}
-            height={44}
-            className="w-9 h-9 sm:w-12 sm:h-12 object-contain flex-shrink-0"
+            width={56}
+            height={56}
+            className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0 transition-transform group-hover:scale-105"
           />
-          <span className="font-display font-black text-base sm:text-lg tracking-wide truncate">
+
+          <span className="font-display font-black text-xl tracking-wide">
             <span className="text-gn-text">Game</span>
             <span className="text-gn-primary">Nook</span>
           </span>
