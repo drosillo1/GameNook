@@ -1,3 +1,4 @@
+//Navigation.tsx
 'use client'
 
 import Link from 'next/link'
@@ -241,15 +242,22 @@ export default function Navigation() {
           )}
 
           {/* ── Hamburguesa ── */}
+          {/* Fix: cuando está abierto (muestra la X) ahora tiene fondo y borde
+              más visibles + texto en gn-text en vez de gn-muted, porque sobre
+              el header con backdrop-blur el contraste anterior era insuficiente
+              (X casi invisible reportada en /games y en general en móvil). */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg
-                       border border-white/[0.08] text-gn-muted hover:text-gn-text
-                       hover:border-white/20 transition-colors"
+            className={`md:hidden flex items-center justify-center w-9 h-9 rounded-lg
+                       border transition-colors ${
+                         mobileOpen
+                           ? 'bg-white/[0.1] border-white/25 text-gn-text'
+                           : 'border-white/[0.08] text-gn-muted hover:text-gn-text hover:border-white/20'
+                       }`}
             aria-label="Menú"
           >
             {mobileOpen
-              ? <XIcon    className="w-4 h-4" />
+              ? <XIcon    className="w-4 h-4" strokeWidth={2.5} />
               : <MenuIcon className="w-4 h-4" />
             }
           </button>

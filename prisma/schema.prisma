@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Account {
@@ -79,6 +80,9 @@ model Game {
   reviews               Review[]
   igdbRating            Float?
   igdbRatingCount       Int?
+  popularityScore       Float            @default(0)
+
+  @@index([status, popularityScore])
 }
 
 model Review {

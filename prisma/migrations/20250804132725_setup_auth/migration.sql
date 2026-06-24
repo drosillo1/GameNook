@@ -75,7 +75,6 @@ CREATE TABLE "public"."User" (
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
     "username" TEXT,
-    "image" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

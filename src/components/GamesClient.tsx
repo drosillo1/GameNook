@@ -1,7 +1,7 @@
 ﻿// src/components/GamesClient.tsx
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -235,6 +235,7 @@ function Sidebar({
 export default function GamesClient({ games, filterOptions }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
 
   // Leer parámetros de URL
   const sortBy = (searchParams.get('sort') ?? 'popular') as SortKey
@@ -245,7 +246,11 @@ export default function GamesClient({ games, filterOptions }: Props) {
   const [localSearch, setLocalSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
 
-  // Actualizar URL cuando cambian los filtros principales
+  // Actualizar URL cuando cambian los filtros principales.
+  // Se envuelve en startTransition para que React marque la navegación
+  // como no urgente y podamos mostrar un estado "isPending" sin bloquear
+  // la interacción — esto da feedback inmediato al usuario en vez de que
+  // los filtros "no parezcan hacer nada" durante la espera de red.
   const updateUrl = (updates: Partial<{
     sort: SortKey
     genre: string[]
@@ -263,7 +268,9 @@ export default function GamesClient({ games, filterOptions }: Props) {
     }
     if (newRating > 0) params.set('rating', newRating.toString())
 
-    router.push(`/games?${params.toString()}`)
+    startTransition(() => {
+      router.push(`/games?${params.toString()}`)
+    })
   }
 
   const toggleGenre = (genre: string) => {
@@ -275,7 +282,9 @@ export default function GamesClient({ games, filterOptions }: Props) {
 
   const resetFilters = () => {
     setLocalSearch('')
-    router.push('/games')
+    startTransition(() => {
+      router.push('/games')
+    })
   }
 
   const hasActiveFilters = sortBy !== 'popular' || genreParams.length > 0 || minRating > 0
@@ -331,9 +340,12 @@ export default function GamesClient({ games, filterOptions }: Props) {
               </span>
               <button
                 onClick={() => setShowFilters(false)}
-                className="text-gn-muted hover:text-gn-text transition-colors"
+                className="flex items-center justify-center w-8 h-8 rounded-lg
+                           bg-white/[0.08] border border-white/20 text-gn-text
+                           hover:bg-white/[0.14] transition-colors"
+                aria-label="Cerrar filtros"
               >
-                <XIcon className="w-5 h-5" />
+                <XIcon className="w-4 h-4" strokeWidth={2.5} />
               </button>
             </div>
             <Sidebar
@@ -437,30 +449,32 @@ export default function GamesClient({ games, filterOptions }: Props) {
           </div>
         )}
 
-        {filtered.length === 0 ? (
-          <div className="text-center py-20 bg-gn-card border border-white/[0.06] rounded-xl">
-            <div className="text-5xl mb-4">🎮</div>
-            <h3 className="font-display font-bold text-xl text-gn-text mb-2">Sin resultados</h3>
-            <p className="text-gn-muted text-sm mb-6 max-w-xs mx-auto">
-              Ningún juego coincide con los filtros aplicados.
-            </p>
-            {hasActiveFilters && (
-              <button
-                onClick={resetFilters}
-                className="text-gn-primary hover:text-gn-primary-dark text-sm
-                           font-semibold uppercase tracking-wide transition-colors"
-              >
-                Limpiar filtros
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map(game => (
-              <GameCard key={game.id} game={game} />
-            ))}
-          </div>
-        )}
+        <div className={isPending ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
+          {filtered.length === 0 ? (
+            <div className="text-center py-20 bg-gn-card border border-white/[0.06] rounded-xl">
+              <div className="text-5xl mb-4">🎮</div>
+              <h3 className="font-display font-bold text-xl text-gn-text mb-2">Sin resultados</h3>
+              <p className="text-gn-muted text-sm mb-6 max-w-xs mx-auto">
+                Ningún juego coincide con los filtros aplicados.
+              </p>
+              {hasActiveFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="text-gn-primary hover:text-gn-primary-dark text-sm
+                             font-semibold uppercase tracking-wide transition-colors"
+                >
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filtered.map(game => (
+                <GameCard key={game.id} game={game} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
