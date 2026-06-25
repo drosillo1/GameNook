@@ -13,6 +13,7 @@ import { RatingIcon } from '@/components/RatingIcon'
 import { getRatingData, getRatingBarColor } from '@/lib/rating'
 import IGDBGameDetails from '@/components/IGDBGameDetails'
 import ReviewList from '@/components/ReviewList'
+import GameDescription from '@/components/GameDescription'
 
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
@@ -134,7 +135,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             </div>
 
             {game.description && (
-              <p className="text-gn-muted text-sm leading-relaxed line-clamp-4">{game.description}</p>
+              <GameDescription description={game.description} />
             )}
 
             {/* Stats Bar */}

@@ -14,11 +14,6 @@ const inputLocked =
   'w-full bg-white/[0.02] border border-white/[0.04] rounded-lg px-3.5 py-2.5 ' +
   'text-gn-muted text-sm cursor-not-allowed select-none'
 
-const inputEditable =
-  'w-full bg-white/[0.03] border border-white/[0.06] rounded-lg px-3.5 py-2.5 ' +
-  'text-gn-text text-sm placeholder-gn-muted outline-none ' +
-  'focus:border-gn-primary/40 focus:ring-1 focus:ring-gn-primary/20 transition-all'
-
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-3">
@@ -44,6 +39,23 @@ function LockedField({ label, value, placeholder = '—' }: {
   )
 }
 
+function LockedTextArea({ label, value, placeholder = '—' }: {
+  label: string; value: string; placeholder?: string
+}) {
+  return (
+    <div>
+      <label className="flex items-center gap-1.5 text-gn-muted text-xs
+                         font-semibold uppercase tracking-widest mb-1.5">
+        {label}
+        <LockIcon className="w-3 h-3 opacity-30" />
+      </label>
+      <div className={`${inputLocked} whitespace-pre-wrap leading-relaxed`}>
+        {value || <span className="opacity-30">{placeholder}</span>}
+      </div>
+    </div>
+  )
+}
+
 export default function AddGamePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -58,7 +70,6 @@ export default function AddGamePage() {
   // Juego duplicado — { title, slug } si ya existe en la BD
   const [duplicateGame, setDuplicateGame] = useState<{ title: string; slug: string } | null>(null)
 
-  const [originalDescription, setOriginalDescription] = useState('')
   const [description, setDescription] = useState('')
 
   const [formData, setFormData] = useState({
@@ -93,7 +104,6 @@ export default function AddGamePage() {
 
         setIgdbId(game.id)
         setIgdbSelected(true)
-        setOriginalDescription(translated)
         setDescription(translated)
         setFormData({
           title: game.name,
@@ -122,9 +132,6 @@ export default function AddGamePage() {
     router.push('/auth/signin')
     return null
   }
-
-  const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'MODERATOR'
-  const descriptionModified = description.trim() !== originalDescription.trim()
 
   // ── Selección IGDB ──────────────────────────────────────────
   const handleIGDBSelect = async (game: IGDBGame) => {
@@ -156,7 +163,6 @@ export default function AddGamePage() {
 
     setIgdbId(game.id)
     setIgdbSelected(true)
-    setOriginalDescription(translated)
     setDescription(translated)
     setFormData({
       title: game.name,
@@ -174,7 +180,6 @@ export default function AddGamePage() {
     setIgdbId(null)
     setIgdbSelected(false)
     setDuplicateGame(null)
-    setOriginalDescription('')
     setDescription('')
     setFormData({ title: '', imageUrl: '', releaseDate: '', genre: [], platform: [] })
     router.replace('/games/add')
@@ -200,7 +205,6 @@ export default function AddGamePage() {
           ...formData,
           description,
           igdbId,
-          descriptionModified: !isAdmin && descriptionModified,
         }),
       })
 
@@ -211,12 +215,7 @@ export default function AddGamePage() {
 
       const game = await res.json()
 
-      if (game.status === 'PENDING') {
-        toast.info(`"${game.title}" enviado — pendiente de revisión por descripción modificada`)
-      } else {
-        toast.success(`"${game.title}" publicado correctamente`)
-      }
-
+      toast.success(`"${game.title}" publicado correctamente`)
       router.push(`/games/${game.slug}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error desconocido'
@@ -316,7 +315,6 @@ export default function AddGamePage() {
                   <>
                     <p className="text-gn-muted text-xs mb-3 leading-relaxed">
                       Busca el juego para importar sus datos automáticamente.
-                      Solo podrás editar la descripción si contiene algún error.
                     </p>
                     <IGDBSearch onSelect={handleIGDBSelect} />
                   </>
@@ -351,114 +349,86 @@ export default function AddGamePage() {
 
               {/* ── Datos del juego — solo visibles tras seleccionar ── */}
               {igdbSelected && !isTranslating && (
-                <>
-                  <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <SectionLabel>Información del juego</SectionLabel>
-                      <span className="flex items-center gap-1 text-gn-subtle text-[11px]">
-                        <LockIcon className="w-3 h-3" />
-                        Datos de IGDB
-                      </span>
-                    </div>
-
-                    <LockedField label="Título" value={formData.title} />
-
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <LockedField
-                        label="Fecha de lanzamiento"
-                        value={formData.releaseDate
-                          ? new Date(formData.releaseDate).toLocaleDateString('es-ES')
-                          : ''}
-                        placeholder="Sin fecha"
-                      />
-                      <LockedField
-                        label="Portada"
-                        value={formData.imageUrl ? '✓ Importada desde IGDB' : ''}
-                        placeholder="Sin portada"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="flex items-center gap-1.5 text-gn-muted text-xs
-                                         font-semibold uppercase tracking-widest mb-2">
-                        Géneros
-                        <LockIcon className="w-3 h-3 opacity-30" />
-                      </label>
-                      {formData.genre.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {formData.genre.map(g => (
-                            <span
-                              key={g}
-                              className="px-2.5 py-1 bg-gn-primary/8 border border-gn-primary/15
-                                         text-red-300 text-xs font-semibold uppercase
-                                         tracking-wide rounded"
-                            >
-                              {g}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gn-subtle text-xs">Sin géneros</span>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="flex items-center gap-1.5 text-gn-muted text-xs
-                                         font-semibold uppercase tracking-widest mb-2">
-                        Plataformas
-                        <LockIcon className="w-3 h-3 opacity-30" />
-                      </label>
-                      {formData.platform.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {formData.platform.map(p => (
-                            <span
-                              key={p}
-                              className="px-2.5 py-1 bg-gn-accent/8 border border-gn-accent/15
-                                         text-purple-300 text-xs font-semibold uppercase
-                                         tracking-wide rounded"
-                            >
-                              {p}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gn-subtle text-xs">Sin plataformas</span>
-                      )}
-                    </div>
+                <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <SectionLabel>Información del juego</SectionLabel>
+                    <span className="flex items-center gap-1 text-gn-subtle text-[11px]">
+                      <LockIcon className="w-3 h-3" />
+                      Datos de IGDB
+                    </span>
                   </div>
 
-                  <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6">
-                    <div className="flex items-start justify-between mb-1.5">
-                      <label className="text-gn-muted text-xs font-semibold
-                                         uppercase tracking-widest">
-                        Descripción
-                      </label>
-                      {descriptionModified && !isAdmin && (
-                        <span className="flex items-center gap-1 text-yellow-400
-                                          text-[11px] font-semibold">
-                          ⚠ Modificada — requiere revisión
-                        </span>
-                      )}
-                    </div>
+                  <LockedField label="Título" value={formData.title} />
 
-                    <textarea
-                      rows={5}
-                      value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      placeholder="Descripción del juego..."
-                      className={`${inputEditable} resize-none`}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <LockedField
+                      label="Fecha de lanzamiento"
+                      value={formData.releaseDate
+                        ? new Date(formData.releaseDate).toLocaleDateString('es-ES')
+                        : ''}
+                      placeholder="Sin fecha"
                     />
-
-                    <p className="text-gn-subtle text-[11px] mt-1.5 leading-relaxed">
-                      Puedes corregir errores de traducción o de IGDB.
-                      {!isAdmin && descriptionModified && (
-                        <span className="text-yellow-400/70 ml-1">
-                          Al modificarla el juego quedará pendiente de revisión.
-                        </span>
-                      )}
-                    </p>
+                    <LockedField
+                      label="Portada"
+                      value={formData.imageUrl ? '✓ Importada desde IGDB' : ''}
+                      placeholder="Sin portada"
+                    />
                   </div>
-                </>
+
+                  <div>
+                    <label className="flex items-center gap-1.5 text-gn-muted text-xs
+                                       font-semibold uppercase tracking-widest mb-2">
+                      Géneros
+                      <LockIcon className="w-3 h-3 opacity-30" />
+                    </label>
+                    {formData.genre.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {formData.genre.map(g => (
+                          <span
+                            key={g}
+                            className="px-2.5 py-1 bg-gn-primary/8 border border-gn-primary/15
+                                       text-red-300 text-xs font-semibold uppercase
+                                       tracking-wide rounded"
+                          >
+                            {g}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gn-subtle text-xs">Sin géneros</span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-1.5 text-gn-muted text-xs
+                                       font-semibold uppercase tracking-widest mb-2">
+                      Plataformas
+                      <LockIcon className="w-3 h-3 opacity-30" />
+                    </label>
+                    {formData.platform.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {formData.platform.map(p => (
+                          <span
+                            key={p}
+                            className="px-2.5 py-1 bg-gn-accent/8 border border-gn-accent/15
+                                       text-purple-300 text-xs font-semibold uppercase
+                                       tracking-wide rounded"
+                          >
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gn-subtle text-xs">Sin plataformas</span>
+                    )}
+                  </div>
+
+                  <LockedTextArea
+                    label="Descripción"
+                    value={description}
+                    placeholder="Sin descripción"
+                  />
+                </div>
               )}
             </div>
 
@@ -491,18 +461,9 @@ export default function AddGamePage() {
                 </div>
 
                 {igdbSelected && (
-                  <div className={`px-3.5 py-3 rounded-lg border text-xs leading-relaxed mb-4
-                                   transition-all duration-200
-                                   ${!isAdmin && descriptionModified
-                                     ? 'bg-yellow-500/8 border-yellow-500/20 text-yellow-400'
-                                     : 'bg-green-500/8  border-green-500/20  text-green-400'
-                                   }`}>
-                    {isAdmin
-                      ? '✓ Se publicará directamente.'
-                      : descriptionModified
-                        ? '⏳ Quedará pendiente por descripción modificada.'
-                        : '✓ Se publicará directamente.'
-                    }
+                  <div className="px-3.5 py-3 rounded-lg border text-xs leading-relaxed mb-4
+                                  bg-green-500/8 border-green-500/20 text-green-400">
+                    ✓ Se publicará directamente.
                   </div>
                 )}
 

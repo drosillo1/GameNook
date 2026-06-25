@@ -73,7 +73,6 @@ model Game {
   status                GameStatus       @default(PENDING)
   submittedBy           String?
   igdbId                Int?             @unique
-  descriptionModified   Boolean          @default(false)
   descriptionTranslated Boolean          @default(false)
   submitter             User?            @relation("SubmittedGames", fields: [submittedBy], references: [id])
   collection            GameCollection[]

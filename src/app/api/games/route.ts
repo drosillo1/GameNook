@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { revalidatePath } from 'next/cache'
 
 function generateSlug(title: string): string {
   return title
@@ -61,7 +62,6 @@ export async function GET(request: NextRequest) {
 
     const gamesWithRating = games.map(game => ({
       ...game,
-      // Incluimos explícitamente o por spread
       igdbRating:      game.igdbRating      ?? null,
       igdbRatingCount: game.igdbRatingCount ?? null,
       averageRating: game.reviews.length > 0
@@ -83,13 +83,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { id: userId, role } = session.user
+    const { id: userId } = session.user
     const body = await request.json()
     const {
       title, description, imageUrl,
       releaseDate, genre, platform,
-      igdbId, descriptionModified,
-      igdbRating, igdbRatingCount // Extraídos del body
+      igdbId,
+      igdbRating, igdbRatingCount
     } = body
 
     if (!title?.trim()) {
@@ -120,12 +120,9 @@ export async function POST(request: NextRequest) {
 
     const slug = await ensureUniqueSlug(generateSlug(title.trim()))
 
-    const status = canModerate(role)
-      ? 'APPROVED'
-      : descriptionModified
-        ? 'PENDING'
-        : 'APPROVED'
-
+    // Ya no existe el estado PENDING por descripción modificada — la descripción
+    // viene siempre tal cual de IGDB/traducción, sin edición de usuario. Todo
+    // juego enviado se aprueba directamente.
     const game = await prisma.game.create({
       data: {
         title:               title.trim(),
@@ -136,9 +133,8 @@ export async function POST(request: NextRequest) {
         genre:               Array.isArray(genre)    ? genre.filter(Boolean)    : [],
         platform:            Array.isArray(platform) ? platform.filter(Boolean) : [],
         igdbId:              typeof igdbId === 'number' ? igdbId : null,
-        status,
+        status:              'APPROVED',
         submittedBy:         userId,
-        descriptionModified: Boolean(descriptionModified),
         igdbRating:          igdbRating      ?? null,
         igdbRatingCount:     igdbRatingCount ?? null,
       },
@@ -147,6 +143,8 @@ export async function POST(request: NextRequest) {
         _count:  { select: { reviews: true } },
       },
     })
+
+    revalidatePath('/games')
 
     return NextResponse.json({ ...game, averageRating: null }, { status: 201 })
   } catch (error) {

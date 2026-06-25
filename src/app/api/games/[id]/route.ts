@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 const canModerate = (role: string) => role === 'ADMIN' || role === 'MODERATOR'
 
@@ -30,6 +31,12 @@ export async function PATCH(
       data:  { status },
     })
 
+    // Invalida el listado /games (todas las combinaciones de filtros/orden/página
+    // cacheadas bajo esa ruta) y el detalle individual del juego.
+    revalidatePath('/games')
+    revalidatePath('/admin')
+    revalidateTag(`game-${game.slug}`)
+
     return NextResponse.json(game)
   } catch (error) {
     console.error('Error updating game status:', error)
@@ -51,7 +58,11 @@ export async function DELETE(
 
     const { id } = await params
 
-    await prisma.game.delete({ where: { id } })
+    const game = await prisma.game.delete({ where: { id } })
+
+    revalidatePath('/games')
+    revalidatePath('/admin')
+    revalidateTag(`game-${game.slug}`)
 
     return NextResponse.json({ ok: true })
   } catch (error) {

@@ -1,12 +1,13 @@
 ﻿// src/components/GamesClient.tsx
 'use client'
 
-import { useState, useMemo, useTransition, useEffect, useRef } from 'react'
+import { useState, useTransition, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { SearchIcon, XIcon } from 'lucide-react'
+import { XIcon } from 'lucide-react'
 import { translateGenre } from '@/lib/genres'
+import GameSearchDropdown from './GameSearchDropdown'
 
 import type { Game, FilterOptions, SortKey } from '@/types/games'
 
@@ -115,49 +116,33 @@ function GameCard({ game }: { game: Game }) {
 }
 
 interface SidebarProps {
-  sortBy:           SortKey
-  onSortChange:     (v: SortKey) => void
-  minRating:        number
-  onRatingChange:   (v: number) => void
-  selectedGenres:   string[]
-  onGenreToggle:    (g: string) => void
+  draftSort:        SortKey
+  onDraftSortChange:    (v: SortKey) => void
+  draftRating:      number
+  onDraftRatingChange:  (v: number) => void
+  draftGenres:      string[]
+  onDraftGenreToggle:   (g: string) => void
   onReset:          () => void
+  onApply:          () => void
   hasActiveFilters: boolean
+  hasPendingChanges: boolean
   filterOptions:    FilterOptions
 }
 
 function Sidebar({
-  sortBy, onSortChange,
-  minRating, onRatingChange,
-  selectedGenres, onGenreToggle,
-  onReset, hasActiveFilters,
+  draftSort, onDraftSortChange,
+  draftRating, onDraftRatingChange,
+  draftGenres, onDraftGenreToggle,
+  onReset, onApply,
+  hasActiveFilters, hasPendingChanges,
   filterOptions,
 }: SidebarProps) {
- 
-  const [localRating, setLocalRating] = useState(minRating)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-
-  useEffect(() => {
-    setLocalRating(minRating)
-  }, [minRating])
-
-  const ratingMeta = RATING_META[localRating] ?? RATING_META[0]
+  const ratingMeta = RATING_META[draftRating] ?? RATING_META[0]
 
   const snapValue = (val: number) =>
     [0, 3, 5, 7, 9].reduce((prev, curr) =>
       Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev)
-
-  
-  const commitRating = (val: number) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    onRatingChange(val)
-  }
-
-  const scheduleDebouncedCommit = (val: number) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => onRatingChange(val), 400)
-  }
 
   return (
     <aside className="bg-gn-card border border-white/[0.06] rounded-xl p-5 sticky top-20 h-fit">
@@ -167,8 +152,8 @@ function Sidebar({
         </p>
         <div className="relative">
           <select
-            value={sortBy}
-            onChange={e => onSortChange(e.target.value as SortKey)}
+            value={draftSort}
+            onChange={e => onDraftSortChange(e.target.value as SortKey)}
             className="w-full bg-gn-surface border border-white/[0.1] rounded-lg
                        px-3 py-2 text-gn-text text-sm appearance-none outline-none
                        hover:border-gn-primary/30 focus:border-gn-primary/40
@@ -194,25 +179,17 @@ function Sidebar({
         </p>
         <div className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg border mb-3
                          text-xs font-bold transition-all duration-200
-                         ${localRating === 0
+                         ${draftRating === 0
                            ? 'bg-white/[0.03] border-white/[0.08] text-gn-muted'
                            : 'bg-orange-500/10 border-orange-500/25 text-orange-400'}`}>
           <span>{ratingMeta.icon}</span>
           <span className={ratingMeta.color}>
-            {localRating === 0 ? 'Cualquiera' : `${localRating}+ — ${ratingMeta.label}`}
+            {draftRating === 0 ? 'Cualquiera' : `${draftRating}+ — ${ratingMeta.label}`}
           </span>
         </div>
         <input
-          type="range" min={0} max={9} step={1} value={localRating}
-          onChange={e => {
-
-            const snapped = snapValue(parseInt(e.target.value))
-            setLocalRating(snapped)
-            scheduleDebouncedCommit(snapped)
-          }}
-          onMouseUp={() => commitRating(localRating)}
-          onTouchEnd={() => commitRating(localRating)}
-          onKeyUp={() => commitRating(localRating)}
+          type="range" min={0} max={9} step={1} value={draftRating}
+          onChange={e => onDraftRatingChange(snapValue(parseInt(e.target.value)))}
           className="w-full accent-gn-primary cursor-pointer"
           style={{ accentColor: 'var(--gn-primary)' }}
         />
@@ -230,10 +207,10 @@ function Sidebar({
           {filterOptions.genres.map(g => (
             <button
               key={g}
-              onClick={() => onGenreToggle(g)}
+              onClick={() => onDraftGenreToggle(g)}
               className={`px-2.5 py-1 rounded-md border text-[11px] font-semibold
                           uppercase tracking-wide transition-all duration-150
-                          ${selectedGenres.includes(g)
+                          ${draftGenres.includes(g)
                             ? 'bg-gn-primary/12 border-gn-primary/35 text-red-300'
                             : 'border-white/[0.06] text-gn-muted hover:border-white/15 hover:text-gn-text'}`}
             >
@@ -242,6 +219,18 @@ function Sidebar({
           ))}
         </div>
       </div>
+
+      <button
+        onClick={onApply}
+        disabled={!hasPendingChanges}
+        className="w-full flex items-center justify-center gap-2 py-2.5 mb-2
+                   bg-gn-primary hover:bg-gn-primary-dark disabled:bg-white/[0.04]
+                   disabled:text-gn-subtle disabled:cursor-not-allowed
+                   text-white text-xs font-bold uppercase tracking-wide rounded-lg
+                   transition-all duration-150"
+      >
+        {hasPendingChanges ? 'Aplicar filtros' : 'Filtros aplicados'}
+      </button>
 
       {hasActiveFilters && (
         <button
@@ -264,91 +253,100 @@ export default function GamesClient({ games, filterOptions }: Props) {
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
 
-  // Leer parámetros de URL
-  const sortBy = (searchParams.get('sort') ?? 'popular') as SortKey
-  const genreParams = searchParams.getAll('genre')
-  const minRating = parseInt(searchParams.get('rating') ?? '0')
+  // Filtros APLICADOS — leídos directamente de la URL (fuente de verdad)
+  const appliedSort = (searchParams.get('sort') ?? 'popular') as SortKey
+  const appliedGenres = searchParams.getAll('genre')
+  const appliedRating = parseInt(searchParams.get('rating') ?? '0')
 
-  // Estado local solo para búsqueda (es más rápido en cliente)
-  const [localSearch, setLocalSearch] = useState('')
+  // Filtros BORRADOR — estado local, no navegan hasta pulsar "Aplicar"
+  const [draftSort, setDraftSort]     = useState<SortKey>(appliedSort)
+  const [draftGenres, setDraftGenres] = useState<string[]>(appliedGenres)
+  const [draftRating, setDraftRating] = useState<number>(appliedRating)
+
   const [showFilters, setShowFilters] = useState(false)
 
-  // Actualizar URL cuando cambian los filtros principales.
-  // Se envuelve en startTransition para que React marque la navegación
-  // como no urgente y podamos mostrar un estado "isPending" sin bloquear
-  // la interacción — esto da feedback inmediato al usuario en vez de que
-  // los filtros "no parezcan hacer nada" durante la espera de red.
-  const updateUrl = (updates: Partial<{
-    sort: SortKey
-    genre: string[]
-    rating: number
-  }>) => {
+  // Si la URL cambia por fuera (navegación, botón atrás), resincroniza el borrador
+  useEffect(() => {
+    setDraftSort(appliedSort)
+    setDraftGenres(appliedGenres)
+    setDraftRating(appliedRating)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.toString()])
+
+  const hasPendingChanges =
+    draftSort !== appliedSort ||
+    draftRating !== appliedRating ||
+    draftGenres.length !== appliedGenres.length ||
+    draftGenres.some(g => !appliedGenres.includes(g))
+
+  const hasActiveFilters = appliedSort !== 'popular' || appliedGenres.length > 0 || appliedRating > 0
+
+  const applyFilters = () => {
     const params = new URLSearchParams()
-
-    const newSort = updates.sort ?? sortBy
-    const newGenres = updates.genre ?? genreParams
-    const newRating = updates.rating ?? minRating
-
-    if (newSort !== 'popular') params.set('sort', newSort)
-    if (newGenres.length > 0) {
-      newGenres.forEach(g => params.append('genre', g))
-    }
-    if (newRating > 0) params.set('rating', newRating.toString())
+    if (draftSort !== 'popular') params.set('sort', draftSort)
+    draftGenres.forEach(g => params.append('genre', g))
+    if (draftRating > 0) params.set('rating', draftRating.toString())
 
     startTransition(() => {
       router.push(`/games?${params.toString()}`)
     })
-  }
-
-  const toggleGenre = (genre: string) => {
-    const newGenres = genreParams.includes(genre)
-      ? genreParams.filter(g => g !== genre)
-      : [...genreParams, genre]
-    updateUrl({ genre: newGenres })
+    setShowFilters(false)
   }
 
   const resetFilters = () => {
-    setLocalSearch('')
+    setDraftSort('popular')
+    setDraftGenres([])
+    setDraftRating(0)
     startTransition(() => {
       router.push('/games')
     })
+    setShowFilters(false)
   }
 
-  const hasActiveFilters = sortBy !== 'popular' || genreParams.length > 0 || minRating > 0
-
-  // Filtrar en cliente: solo búsqueda de texto (el rating y el orden ya vienen
-  // resueltos desde el servidor para que la paginación sea correcta)
-  const filtered = useMemo(() => {
-    if (!localSearch.trim()) return games
-
-    const q = localSearch.toLowerCase()
-    return games.filter(g =>
-      g.title.toLowerCase().includes(q) ||
-      g.genre.some(gen => gen.toLowerCase().includes(q))
+  const toggleDraftGenre = (genre: string) => {
+    setDraftGenres(prev =>
+      prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
     )
-  }, [games, localSearch])
+  }
 
-  const activeFilterPills = [
-    ...genreParams.map(g => ({
+  const activeFilterPills = useMemo(() => [
+    ...appliedGenres.map(g => ({
       label: translateGenre(g),
-      onRemove: () => toggleGenre(g),
+      onRemove: () => {
+        const params = new URLSearchParams()
+        if (appliedSort !== 'popular') params.set('sort', appliedSort)
+        appliedGenres.filter(x => x !== g).forEach(x => params.append('genre', x))
+        if (appliedRating > 0) params.set('rating', appliedRating.toString())
+        startTransition(() => router.push(`/games?${params.toString()}`))
+      },
     })),
-    ...(minRating > 0 ? [{ label: `Rating ≥ ${minRating}`, onRemove: () => updateUrl({ rating: 0 }) }] : []),
-  ]
+    ...(appliedRating > 0 ? [{
+      label: `Rating ≥ ${appliedRating}`,
+      onRemove: () => {
+        const params = new URLSearchParams()
+        if (appliedSort !== 'popular') params.set('sort', appliedSort)
+        appliedGenres.forEach(g => params.append('genre', g))
+        startTransition(() => router.push(`/games?${params.toString()}`))
+      },
+    }] : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [appliedGenres, appliedRating, appliedSort])
 
   return (
     <div className="flex gap-6 items-start">
       {/* Sidebar desktop */}
       <div className="hidden lg:block w-52 flex-shrink-0">
         <Sidebar
-          sortBy={sortBy}
-          onSortChange={(v) => updateUrl({ sort: v })}
-          minRating={minRating}
-          onRatingChange={(v) => updateUrl({ rating: v })}
-          selectedGenres={genreParams}
-          onGenreToggle={toggleGenre}
+          draftSort={draftSort}
+          onDraftSortChange={setDraftSort}
+          draftRating={draftRating}
+          onDraftRatingChange={setDraftRating}
+          draftGenres={draftGenres}
+          onDraftGenreToggle={toggleDraftGenre}
           onReset={resetFilters}
+          onApply={applyFilters}
           hasActiveFilters={hasActiveFilters}
+          hasPendingChanges={hasPendingChanges}
           filterOptions={filterOptions}
         />
       </div>
@@ -376,20 +374,16 @@ export default function GamesClient({ games, filterOptions }: Props) {
               </button>
             </div>
             <Sidebar
-              sortBy={sortBy}
-              onSortChange={(v) => {
-                updateUrl({ sort: v })
-                setShowFilters(false)
-              }}
-              minRating={minRating}
-              onRatingChange={(v) => updateUrl({ rating: v })}
-              selectedGenres={genreParams}
-              onGenreToggle={toggleGenre}
-              onReset={() => {
-                resetFilters()
-                setShowFilters(false)
-              }}
+              draftSort={draftSort}
+              onDraftSortChange={setDraftSort}
+              draftRating={draftRating}
+              onDraftRatingChange={setDraftRating}
+              draftGenres={draftGenres}
+              onDraftGenreToggle={toggleDraftGenre}
+              onReset={resetFilters}
+              onApply={applyFilters}
               hasActiveFilters={hasActiveFilters}
+              hasPendingChanges={hasPendingChanges}
               filterOptions={filterOptions}
             />
           </div>
@@ -420,32 +414,10 @@ export default function GamesClient({ games, filterOptions }: Props) {
             )}
           </button>
 
-          <div className="relative flex-1 min-w-[200px]">
-            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2
-                                   w-4 h-4 text-gn-muted pointer-events-none" />
-            <input
-              type="text"
-              value={localSearch}
-              onChange={e => setLocalSearch(e.target.value)}
-              placeholder="Buscar juegos, géneros..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gn-card border border-white/[0.06]
-                         rounded-xl text-gn-text placeholder-gn-muted text-sm
-                         focus:outline-none focus:border-gn-primary/40
-                         focus:ring-1 focus:ring-gn-primary/20 transition-all"
-            />
-            {localSearch && (
-              <button
-                onClick={() => setLocalSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gn-muted hover:text-gn-text"
-              >
-                <XIcon className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          {/* Buscador — independiente de los filtros, navega directo al juego */}
+          <GameSearchDropdown />
 
           <p className="text-gn-muted text-sm flex-shrink-0">
-            <span className="text-gn-text font-semibold">{filtered.length}</span>
-            {' '}de{' '}
             <span className="text-gn-text font-semibold">{games.length}</span>
             {' '}juegos
           </p>
@@ -477,7 +449,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
         )}
 
         <div className={isPending ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
-          {filtered.length === 0 ? (
+          {games.length === 0 ? (
             <div className="text-center py-20 bg-gn-card border border-white/[0.06] rounded-xl">
               <div className="text-5xl mb-4">🎮</div>
               <h3 className="font-display font-bold text-xl text-gn-text mb-2">Sin resultados</h3>
@@ -496,7 +468,7 @@ export default function GamesClient({ games, filterOptions }: Props) {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filtered.map(game => (
+              {games.map(game => (
                 <GameCard key={game.id} game={game} />
               ))}
             </div>

@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidateTag } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getServerSession } from 'next-auth'
@@ -45,8 +45,10 @@ export async function updateGameAction(gameId: string, slug: string, formData: u
 
   try {
     revalidateTag(`game-${slug}`)
+    revalidatePath('/games')
+    revalidatePath('/admin')
   } catch (err) {
-    console.error('revalidateTag failed', err)
+    console.error('revalidate failed', err)
   }
 
   return updated
@@ -67,8 +69,9 @@ export async function createGameAction(formData: unknown) {
 
   try {
     revalidateTag(`game-${created.slug}`)
+    revalidatePath('/games')
   } catch (err) {
-    console.error('revalidateTag failed', err)
+    console.error('revalidate failed', err)
   }
 
   return created
