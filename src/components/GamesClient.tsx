@@ -1,7 +1,7 @@
 ﻿// src/components/GamesClient.tsx
 'use client'
 
-import { useState, useMemo, useTransition } from 'react'
+import { useState, useMemo, useTransition, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -133,7 +133,31 @@ function Sidebar({
   onReset, hasActiveFilters,
   filterOptions,
 }: SidebarProps) {
-  const ratingMeta = RATING_META[minRating] ?? RATING_META[0]
+ 
+  const [localRating, setLocalRating] = useState(minRating)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+
+  useEffect(() => {
+    setLocalRating(minRating)
+  }, [minRating])
+
+  const ratingMeta = RATING_META[localRating] ?? RATING_META[0]
+
+  const snapValue = (val: number) =>
+    [0, 3, 5, 7, 9].reduce((prev, curr) =>
+      Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev)
+
+  
+  const commitRating = (val: number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    onRatingChange(val)
+  }
+
+  const scheduleDebouncedCommit = (val: number) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => onRatingChange(val), 400)
+  }
 
   return (
     <aside className="bg-gn-card border border-white/[0.06] rounded-xl p-5 sticky top-20 h-fit">
@@ -170,22 +194,25 @@ function Sidebar({
         </p>
         <div className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg border mb-3
                          text-xs font-bold transition-all duration-200
-                         ${minRating === 0
+                         ${localRating === 0
                            ? 'bg-white/[0.03] border-white/[0.08] text-gn-muted'
                            : 'bg-orange-500/10 border-orange-500/25 text-orange-400'}`}>
           <span>{ratingMeta.icon}</span>
           <span className={ratingMeta.color}>
-            {minRating === 0 ? 'Cualquiera' : `${minRating}+ — ${ratingMeta.label}`}
+            {localRating === 0 ? 'Cualquiera' : `${localRating}+ — ${ratingMeta.label}`}
           </span>
         </div>
         <input
-          type="range" min={0} max={9} step={1} value={minRating}
+          type="range" min={0} max={9} step={1} value={localRating}
           onChange={e => {
-            const val     = parseInt(e.target.value)
-            const snapped = [0, 3, 5, 7, 9].reduce((prev, curr) =>
-              Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev)
-            onRatingChange(snapped)
+
+            const snapped = snapValue(parseInt(e.target.value))
+            setLocalRating(snapped)
+            scheduleDebouncedCommit(snapped)
           }}
+          onMouseUp={() => commitRating(localRating)}
+          onTouchEnd={() => commitRating(localRating)}
+          onKeyUp={() => commitRating(localRating)}
           className="w-full accent-gn-primary cursor-pointer"
           style={{ accentColor: 'var(--gn-primary)' }}
         />
