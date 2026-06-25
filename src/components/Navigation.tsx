@@ -242,16 +242,12 @@ export default function Navigation() {
           )}
 
           {/* ── Hamburguesa ── */}
-          {/* Fix: cuando está abierto (muestra la X) ahora tiene fondo y borde
-              más visibles + texto en gn-text en vez de gn-muted, porque sobre
-              el header con backdrop-blur el contraste anterior era insuficiente
-              (X casi invisible reportada en /games y en general en móvil). */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className={`md:hidden flex items-center justify-center w-9 h-9 rounded-lg
                        border transition-colors ${
                          mobileOpen
-                           ? 'bg-white/[0.1] border-white/25 text-gn-text'
+                           ? 'bg-gn-primary border-gn-primary text-white shadow-gn-red'
                            : 'border-white/[0.08] text-gn-muted hover:text-gn-text hover:border-white/20'
                        }`}
             aria-label="Menú"
@@ -268,7 +264,7 @@ export default function Navigation() {
       {mobileOpen && (
         <>
           <div
-            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
+            className="fixed top-[60px] inset-x-0 bottom-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
             onClick={() => setMobileOpen(false)}
           />
           <div className="absolute top-[60px] left-0 right-0 z-40 md:hidden
