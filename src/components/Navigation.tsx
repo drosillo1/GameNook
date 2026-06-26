@@ -51,11 +51,11 @@ export default function Navigation() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileOpen,   setMobileOpen]   = useState(false)
 
-  // Redirigir a onboarding si el usuario no tiene nombre
+  // Redirigir a onboarding si el usuario no tiene nombre o username
   useEffect(() => {
     if (
       session &&
-      !session.user?.name &&
+      (!session.user?.name || !session.user?.username) &&
       pathname !== '/onboarding' &&
       !pathname.startsWith('/auth')
     ) {

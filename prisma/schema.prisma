@@ -48,6 +48,7 @@ model User {
   games         Game[]           @relation("SubmittedGames")
   collection    GameCollection[]
   reviews       Review[]
+  reviewLikes   ReviewLike[]
   sessions      Session[]
 }
 
@@ -85,17 +86,31 @@ model Game {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  rating    Int      @db.SmallInt
+  id        String       @id @default(cuid())
+  rating    Int          @db.SmallInt
   content   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  likeCount Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
   userId    String
   gameId    String
-  game      Game     @relation(fields: [gameId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  game      Game         @relation(fields: [gameId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+  likes     ReviewLike[]
 
   @@unique([userId, gameId])
+  @@index([gameId, likeCount])
+}
+
+model ReviewLike {
+  id        String   @id @default(cuid())
+  userId    String
+  reviewId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, reviewId])
 }
 
 model GameCollection {

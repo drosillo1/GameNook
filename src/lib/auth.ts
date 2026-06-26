@@ -160,10 +160,11 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, user }) {
       if (session?.user && user) {
-        session.user.id    = user.id
-        session.user.role  = (user as any).role  ?? 'USER'
-        session.user.name  = (user as any).name  // refresca nombre tras onboarding
+        session.user.id = user.id
+        session.user.role = (user as any).role ?? 'USER'
+        session.user.name = (user as any).name      // refresca nombre tras onboarding
         session.user.image = (user as any).image || session.user.image
+        session.user.username = (user as any).username  // refresca username tras onboarding
       }
       return session
     },

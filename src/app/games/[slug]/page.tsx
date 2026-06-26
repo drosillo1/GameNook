@@ -44,6 +44,11 @@ function calcStats(reviews: any[]) {
   return { average: sum / total, total, distribution }
 }
 
+// Mínimo de reseñas con votos y de reseñas totales para mostrar la sección "Destacadas"
+const FEATURED_MIN_LIKED_REVIEWS = 3
+const FEATURED_MIN_TOTAL_REVIEWS = 4
+const FEATURED_COUNT = 3
+
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const { slug } = await params
 
@@ -54,8 +59,10 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     prisma.review.findMany({
       where: { game: { slug } },
       select: {
-        id: true, rating: true, content: true, createdAt: true, updatedAt: true, userId: true,
-        user: { select: { id: true, name: true, email: true, image: true } }
+        id: true, rating: true, content: true, createdAt: true, updatedAt: true,
+        userId: true, likeCount: true,
+        user: { select: { id: true, name: true, email: true, image: true } },
+        likes: { select: { userId: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -66,16 +73,37 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const stats = calcStats(reviews)
   const userReview = session ? reviews.find(r => r.userId === session.user?.id) : null
   const ratingData = getRatingData(Math.round(stats.average) || 5)
+  const currentUserId = session?.user?.id
 
   const reviewsWithUsernames = reviews.map(r => ({
-    ...r,
+    id: r.id,
+    rating: r.rating,
+    content: r.content,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
+    userId: r.userId,
+    likeCount: r.likeCount,
+    likedByCurrentUser: currentUserId ? r.likes.some(l => l.userId === currentUserId) : false,
     user: {
       ...r.user,
       username: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario',
     },
   }))
+
+  // ── Reseñas destacadas (top por likes) ──
+  // Solo se muestran si hay suficientes reseñas con votos como para que la sección aporte algo
+  const likedReviews = reviewsWithUsernames.filter(r => r.likeCount > 0)
+  const showFeatured = reviewsWithUsernames.length >= FEATURED_MIN_TOTAL_REVIEWS
+    && likedReviews.length >= FEATURED_MIN_LIKED_REVIEWS
+
+  const featuredReviews = showFeatured
+    ? [...likedReviews]
+        .sort((a, b) => b.likeCount - a.likeCount || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, FEATURED_COUNT)
+    : []
+
+  const featuredIds = new Set(featuredReviews.map(r => r.id))
+  const remainingReviews = reviewsWithUsernames.filter(r => !featuredIds.has(r.id))
 
   return (
     <div className="min-h-screen bg-gn-bg font-body">
@@ -183,7 +211,11 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               <h2 className="font-display font-bold text-sm tracking-wide text-gn-text">Reseñas</h2>
               <span className="text-gn-muted text-xs">{stats.total} reseñas</span>
             </div>
-            <ReviewList reviews={reviewsWithUsernames} currentUserId={session?.user?.id} />
+            <ReviewList
+              reviews={remainingReviews}
+              featuredReviews={featuredReviews}
+              currentUserId={currentUserId}
+            />
           </div>
         </div>
 

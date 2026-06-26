@@ -3,13 +3,19 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { PxlKitIcon } from '@pxlkit/core'
+import { Crown, Trophy, Medal, Shield, Heart, Sword } from '@pxlkit/gamification'
+import { PencilIcon } from 'lucide-react'
 import RatingGaming from './RatingGaming'
 import { toast } from '@/lib/toast'
+import { getRatingData } from '@/lib/rating'
 
 interface ReviewFormProps {
   gameId: string
   existingReview?: { id: string; rating: number; content: string | null } | null
 }
+
+const ICON_MAP = { Sword, Heart, Shield, Medal, Trophy, Crown } as const
 
 export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) {
   const router = useRouter()
@@ -17,6 +23,10 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
   const [content,     setContent]     = useState(existingReview?.content ?? '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error,       setError]       = useState('')
+
+  // Si ya existe una reseña, arrancamos en modo vista (bloqueado).
+  // Si es una reseña nueva, arrancamos directamente en modo edición.
+  const [isEditing, setIsEditing] = useState(!existingReview)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -30,8 +40,8 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
 
   // Ajustar altura al montar (reseña existente) y cada vez que cambia el contenido
   useEffect(() => {
-    resizeTextarea()
-  }, [content])
+    if (isEditing) resizeTextarea()
+  }, [content, isEditing])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,6 +82,85 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
     }
   }
 
+  const cancelEdit = () => {
+    if (!existingReview) return
+    setRating(existingReview.rating)
+    setContent(existingReview.content ?? '')
+    setError('')
+    setIsEditing(false)
+  }
+
+  // ── MODO VISTA (reseña existente, sin editar) ──
+  if (existingReview && !isEditing) {
+    const { iconName, label } = getRatingData(existingReview.rating)
+    const icon = ICON_MAP[iconName as keyof typeof ICON_MAP]
+
+    return (
+      <div className="space-y-5">
+        {error && (
+          <div className="bg-gn-primary/10 border border-gn-primary/30 text-red-300
+                          px-3 py-2.5 rounded-lg text-xs font-semibold">
+            {error}
+          </div>
+        )}
+
+        {/* Rating (solo lectura) */}
+        <div>
+          <p className="text-gn-muted text-xs font-semibold uppercase tracking-widest mb-1.5">
+            Tu puntuación
+          </p>
+          <div className="flex items-center gap-2">
+            <PxlKitIcon icon={icon} size={18} />
+            <span className="font-medium text-sm text-gn-text">{existingReview.rating}/10</span>
+            <span className="text-xs text-gn-muted">{label}</span>
+          </div>
+        </div>
+
+        {/* Contenido (solo lectura) */}
+        <div>
+          <p className="text-gn-muted text-xs font-semibold uppercase tracking-widest mb-1.5">
+            Reseña
+          </p>
+          {existingReview.content ? (
+            <p className="text-gn-text text-sm leading-relaxed whitespace-pre-line">
+              {existingReview.content}
+            </p>
+          ) : (
+            <p className="text-gn-subtle text-sm">Sin comentario</p>
+          )}
+        </div>
+
+        {/* Botones */}
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="w-full flex items-center justify-center gap-2 bg-gn-primary
+                       hover:bg-gn-primary-dark text-white font-bold uppercase
+                       tracking-wider text-sm py-3 rounded-lg shadow-gn-red
+                       transition-all duration-200"
+          >
+            <PencilIcon className="w-4 h-4" />
+            Editar reseña
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isSubmitting}
+            className="w-full border border-gn-primary/30 text-gn-primary
+                       hover:bg-gn-primary/10 disabled:opacity-40 font-semibold
+                       uppercase tracking-wider text-xs py-2.5 rounded-lg
+                       transition-all duration-150"
+          >
+            {isSubmitting ? 'Eliminando...' : 'Eliminar reseña'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── MODO EDICIÓN (reseña nueva, o existente en edición) ──
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
 
@@ -125,19 +214,19 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
             : '▶ Publicar reseña'}
         </button>
 
-        {existingReview && (
+        {existingReview ? (
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={cancelEdit}
             disabled={isSubmitting}
-            className="w-full border border-gn-primary/30 text-gn-primary
-                       hover:bg-gn-primary/10 disabled:opacity-40 font-semibold
-                       uppercase tracking-wider text-xs py-2.5 rounded-lg
-                       transition-all duration-150"
+            className="w-full border border-white/[0.06] text-gn-muted
+                       hover:text-gn-text hover:border-white/15 disabled:opacity-40
+                       font-semibold uppercase tracking-wider text-xs py-2.5
+                       rounded-lg transition-all duration-150"
           >
-            Eliminar reseña
+            Cancelar
           </button>
-        )}
+        ) : null}
       </div>
     </form>
   )

@@ -3,11 +3,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { EditIcon, TrashIcon, MoreVerticalIcon } from 'lucide-react'
+import { EditIcon, TrashIcon, MoreVerticalIcon, HeartIcon } from 'lucide-react'
 import { PxlKitIcon } from '@pxlkit/core'
 import { Crown, Trophy, Medal, Shield, Heart, Sword } from '@pxlkit/gamification'
 import { toast } from '@/lib/toast'
 import { getRatingData, getRatingChipClass } from '@/lib/rating'
+import { toggleReviewLikeAction } from '@/actions/reviews'
 
 interface Review {
   id: string
@@ -15,6 +16,8 @@ interface Review {
   content: string | null
   createdAt: string
   updatedAt: string
+  likeCount: number
+  likedByCurrentUser: boolean
   user: {
     id: string
     name: string | null
@@ -104,6 +107,35 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
   const [editRating,   setEditRating]   = useState(review.rating)
   const [hoveredRating, setHoveredRating] = useState(0)
   const [error,        setError]        = useState('')
+
+  // Estado optimista del like
+  const [liked,      setLiked]      = useState(review.likedByCurrentUser)
+  const [likeCount,  setLikeCount]  = useState(review.likeCount)
+  const [isLiking,   setIsLiking]   = useState(false)
+
+  const handleToggleLike = async () => {
+    if (isOwn || isLiking) return
+
+    // Actualización optimista
+    const prevLiked = liked
+    const prevCount = likeCount
+    setLiked(!prevLiked)
+    setLikeCount(prevLiked ? prevCount - 1 : prevCount + 1)
+    setIsLiking(true)
+
+    try {
+      const result = await toggleReviewLikeAction(review.id)
+      setLiked(result.liked)
+      setLikeCount(result.likeCount)
+    } catch (error) {
+      // Revertir si falla
+      setLiked(prevLiked)
+      setLikeCount(prevCount)
+      toast.error(error instanceof Error ? error.message : 'No se pudo registrar el voto')
+    } finally {
+      setIsLiking(false)
+    }
+  }
 
   const handleEdit = async () => {
     if (editRating === 0) {
@@ -316,6 +348,30 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
                        disabled:cursor-not-allowed transition-colors font-semibold"
           >
             Guardar Cambios
+          </button>
+        </div>
+      )}
+
+      {/* Footer: botón de like */}
+      {!isEditing && (
+        <div className="flex items-center justify-end mt-1 pt-3 border-t border-white/[0.04]">
+          <button
+            onClick={handleToggleLike}
+            disabled={isOwn || isLiking}
+            title={isOwn ? 'No puedes votar tu propia reseña' : undefined}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs
+                        font-semibold transition-all
+                        ${liked
+                          ? 'bg-gn-primary/10 border-gn-primary/30 text-gn-primary'
+                          : 'bg-white/5 border-white/10 text-gn-muted hover:border-white/20 hover:text-gn-text'}
+                        ${isOwn ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
+                        ${isLiking ? 'opacity-60' : ''}`}
+          >
+            <HeartIcon
+              className="w-3.5 h-3.5"
+              fill={liked ? 'currentColor' : 'none'}
+            />
+            {likeCount}
           </button>
         </div>
       )}

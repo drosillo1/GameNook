@@ -45,11 +45,11 @@ export default function RatingGaming({ value, onChange, disabled = false }: Rati
   const iconData = IconIcons[display as keyof typeof IconIcons]
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 w-full">
 
       {/* ── Display central ── */}
-      <div className={`flex items-center gap-4 px-4 py-3 rounded-xl border transition-all duration-200 ${meta.chipClass}`}>
-        <PxlKitIcon icon={iconData} size={32} />
+      <div className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl border transition-all duration-200 ${meta.chipClass}`}>
+        <PxlKitIcon icon={iconData} size={32} className="flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-1.5">
             <span
@@ -60,14 +60,14 @@ export default function RatingGaming({ value, onChange, disabled = false }: Rati
             </span>
             <span className="text-gn-muted text-sm">/10</span>
           </div>
-          <p className="text-xs font-semibold uppercase tracking-widest mt-0.5"
+          <p className="text-xs font-semibold uppercase tracking-widest mt-0.5 truncate"
              style={{ color: meta.color }}>
             {meta.label}
           </p>
         </div>
 
         {/* Barra de progreso */}
-        <div className="w-24 flex flex-col gap-1">
+        <div className="w-24 flex-shrink-0 flex flex-col gap-1">
           <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-300"
