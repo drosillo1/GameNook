@@ -17,6 +17,9 @@ interface ReviewFormProps {
 
 const ICON_MAP = { Sword, Heart, Shield, Medal, Trophy, Crown } as const
 
+// Altura máxima del textarea antes de activar scroll interno (~10 líneas aprox.)
+const TEXTAREA_MAX_HEIGHT = 260
+
 export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) {
   const router = useRouter()
   const [rating,      setRating]      = useState(existingReview?.rating  ?? 5)
@@ -30,12 +33,15 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-resize: ajusta la altura al contenido real (scrollHeight)
+  // Auto-resize con límite: crece con el contenido hasta TEXTAREA_MAX_HEIGHT,
+  // a partir de ahí activa scroll interno en vez de seguir creciendo
   const resizeTextarea = () => {
     const el = textareaRef.current
     if (!el) return
     el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
+    const newHeight = Math.min(el.scrollHeight, TEXTAREA_MAX_HEIGHT)
+    el.style.height = `${newHeight}px`
+    el.style.overflowY = el.scrollHeight > TEXTAREA_MAX_HEIGHT ? 'auto' : 'hidden'
   }
 
   // Ajustar altura al montar (reseña existente) y cada vez que cambia el contenido
@@ -58,6 +64,7 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
       )
       if (!res.ok) throw new Error()
       toast.success(existingReview ? 'Reseña actualizada correctamente' : 'Reseña publicada correctamente')
+      setIsEditing(false)
       setTimeout(() => router.refresh(), 200)
     } catch {
       setError('Error al guardar la reseña. Inténtalo de nuevo.')
@@ -96,7 +103,7 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
     const icon = ICON_MAP[iconName as keyof typeof ICON_MAP]
 
     return (
-      <div className="space-y-5">
+      <div className="space-y-5 w-full min-w-0">
         {error && (
           <div className="bg-gn-primary/10 border border-gn-primary/30 text-red-300
                           px-3 py-2.5 rounded-lg text-xs font-semibold">
@@ -105,7 +112,7 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
         )}
 
         {/* Rating (solo lectura) */}
-        <div>
+        <div className="min-w-0">
           <p className="text-gn-muted text-xs font-semibold uppercase tracking-widest mb-1.5">
             Tu puntuación
           </p>
@@ -117,12 +124,12 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
         </div>
 
         {/* Contenido (solo lectura) */}
-        <div>
+        <div className="min-w-0">
           <p className="text-gn-muted text-xs font-semibold uppercase tracking-widest mb-1.5">
             Reseña
           </p>
           {existingReview.content ? (
-            <p className="text-gn-text text-sm leading-relaxed whitespace-pre-line">
+            <p className="text-gn-text text-sm leading-relaxed whitespace-pre-line break-words">
               {existingReview.content}
             </p>
           ) : (
@@ -162,7 +169,7 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
 
   // ── MODO EDICIÓN (reseña nueva, o existente en edición) ──
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5 w-full min-w-0">
 
       {error && (
         <div className="bg-gn-primary/10 border border-gn-primary/30 text-red-300
@@ -175,7 +182,7 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
       <RatingGaming value={rating} onChange={setRating} disabled={isSubmitting} />
 
       {/* Textarea */}
-      <div>
+      <div className="min-w-0">
         <label className="block text-gn-muted text-xs font-semibold uppercase
                            tracking-widest mb-1.5">
           Reseña
@@ -188,12 +195,12 @@ export default function ReviewForm({ gameId, existingReview }: ReviewFormProps) 
           rows={3}
           maxLength={1000}
           placeholder="Comparte tu experiencia..."
+          style={{ maxHeight: `${TEXTAREA_MAX_HEIGHT}px` }}
           className="w-full bg-white/[0.03] border border-white/[0.06] rounded-lg
                      px-3.5 py-2.5 text-gn-text text-sm placeholder-gn-muted
                      focus:outline-none focus:border-gn-primary/40
                      focus:ring-1 focus:ring-gn-primary/20
-                     disabled:opacity-40 resize-none transition-all
-                     overflow-hidden"
+                     disabled:opacity-40 resize-none transition-all"
         />
         <p className="text-gn-muted text-xs mt-1 text-right">
           {content.length}/1000
