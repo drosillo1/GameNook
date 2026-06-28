@@ -3,10 +3,13 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { HeartIcon } from 'lucide-react'
-import { RatingBadge } from '@/components/RatingBadge'
+import { PxlKitIcon } from '@pxlkit/core'
+import { Crown, Trophy, Medal, Shield, Heart, Sword } from '@pxlkit/gamification'
+import { getRatingData } from '@/lib/rating'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 12
 
 type SortOption = 'recent' | 'rating_desc' | 'rating_asc'
 
@@ -15,6 +18,8 @@ const SORT_LABELS: Record<SortOption, string> = {
   rating_desc: 'Mejor puntuadas',
   rating_asc:  'Peor puntuadas',
 }
+
+const ICON_MAP = { Sword, Heart, Shield, Medal, Trophy, Crown } as const
 
 interface ProfileReview {
   id: string
@@ -36,55 +41,68 @@ interface Props {
   featuredReviews?: ProfileReview[]
 }
 
-function ReviewRow({ review }: { review: ProfileReview }) {
+function ReviewCard({ review }: { review: ProfileReview }) {
+  const { iconName, label } = getRatingData(review.rating)
+  const icon = ICON_MAP[iconName as keyof typeof ICON_MAP]
+
   return (
     <Link
       href={`/games/${review.game.slug}`}
-      className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02]
-                 transition-colors group"
+      className="bg-gn-surface/40 border border-white/[0.06] rounded-xl overflow-hidden
+                 hover:border-gn-primary/25 hover:-translate-y-0.5 transition-all
+                 duration-200 group flex flex-col"
     >
-      {/* Thumbnail */}
-      <div className="w-14 h-10 bg-gn-surface rounded-lg overflow-hidden
-                      flex-shrink-0 flex items-center justify-center">
+      {/* Portada del juego — formato vertical completo, sin recortes */}
+      <div className="relative aspect-[3/4] bg-gn-surface overflow-hidden flex-shrink-0">
         {review.game.imageUrl ? (
-          <img
+          <Image
             src={review.game.imageUrl}
             alt={review.game.title}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, 50vw"
           />
         ) : (
-          <span className="text-lg">🎮</span>
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-4xl">🎮</span>
+          </div>
         )}
       </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-gn-text text-sm font-semibold truncate
+      {/* Contenido */}
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        <p className="font-display font-bold text-sm text-gn-text truncate
                       group-hover:text-gn-primary transition-colors">
           {review.game.title}
         </p>
+
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <PxlKitIcon icon={icon} size={16} />
+            <span className="font-medium text-sm text-gn-text">{review.rating}/10</span>
+            <span className="text-xs text-gn-muted">{label}</span>
+          </div>
+
+          {typeof review.likeCount === 'number' && review.likeCount > 0 && (
+            <div className="flex items-center gap-1 text-gn-muted text-xs flex-shrink-0">
+              <HeartIcon className="w-3.5 h-3.5" fill="currentColor" />
+              {review.likeCount}
+            </div>
+          )}
+        </div>
+
         {review.content ? (
-          <p className="text-gn-muted text-xs truncate mt-0.5">
+          <p className="text-gn-muted text-xs leading-relaxed line-clamp-3 break-words">
             {review.content}
           </p>
         ) : (
-          <p className="text-gn-subtle text-xs mt-0.5">Sin comentario</p>
+          <p className="text-gn-subtle text-xs italic">Sin comentario</p>
         )}
-        <p className="text-gn-subtle text-[11px] mt-1">
+
+        <p className="text-gn-subtle text-[11px] mt-auto pt-1">
           {new Date(review.createdAt).toLocaleDateString('es-ES')}
         </p>
       </div>
-
-      {/* Likes (si los hay) */}
-      {typeof review.likeCount === 'number' && review.likeCount > 0 && (
-        <div className="flex items-center gap-1 text-gn-muted text-xs flex-shrink-0">
-          <HeartIcon className="w-3.5 h-3.5" fill="currentColor" />
-          {review.likeCount}
-        </div>
-      )}
-
-      {/* Rating */}
-      <RatingBadge rating={review.rating} />
     </Link>
   )
 }
@@ -113,14 +131,13 @@ export default function ProfileReviewsList({ reviews, featuredReviews = [] }: Pr
 
   const handleSortChange = (newSort: SortOption) => {
     setSort(newSort)
-    setPage(1) // Reiniciar paginación al cambiar de orden
+    setPage(1)
   }
 
   const hasFeatured = featuredReviews.length > 0
 
   return (
     <>
-      {/* Destacadas */}
       {hasFeatured && (
         <div className="px-6 py-5 border-b border-white/[0.06] bg-gn-primary/[0.03]">
           <div className="flex items-center gap-1.5 mb-3">
@@ -129,15 +146,14 @@ export default function ProfileReviewsList({ reviews, featuredReviews = [] }: Pr
               Reseñas destacadas
             </p>
           </div>
-          <div className="divide-y divide-white/[0.04] -mx-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {featuredReviews.map(review => (
-              <ReviewRow key={review.id} review={review} />
+              <ReviewCard key={review.id} review={review} />
             ))}
           </div>
         </div>
       )}
 
-      {/* Selector de orden */}
       <div className="flex items-center justify-end gap-2 px-6 py-3 border-b border-white/[0.06]">
         <span className="text-gn-muted text-xs uppercase tracking-widest font-semibold">
           Ordenar:
@@ -159,14 +175,16 @@ export default function ProfileReviewsList({ reviews, featuredReviews = [] }: Pr
         </select>
       </div>
 
-      <div className="divide-y divide-white/[0.04]">
-        {visible.map(review => (
-          <ReviewRow key={review.id} review={review} />
-        ))}
+      <div className="p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {visible.map(review => (
+            <ReviewCard key={review.id} review={review} />
+          ))}
+        </div>
       </div>
 
       {hasMore && (
-        <div className="px-6 py-4 border-t border-white/[0.06] text-center">
+        <div className="px-6 pb-6 text-center">
           <button
             onClick={() => setPage(p => p + 1)}
             className="text-gn-muted hover:text-gn-primary text-xs font-semibold

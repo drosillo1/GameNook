@@ -4,6 +4,7 @@
 import { useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import UserAvatarDisplay from './UserAvatarDisplay'
 
 const RATING_META: Record<number, { icon: string; color: string; label: string }> = {
   1:  { icon: '🎮', color: '#6b7280', label: 'Jugable'        },
@@ -77,22 +78,11 @@ function ReviewCard({ review, index }: { review: Review; index: number }) {
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0
-                            bg-gn-primary/20 flex items-center justify-center relative">
-              {review.user.image ? (
-                <Image
-                  src={review.user.image}
-                  alt={review.user.name ?? 'Avatar del usuario'}
-                  fill
-                  className="object-cover"
-                  sizes="28px"
-                />
-              ) : (
-                <span className="text-gn-primary text-xs font-bold">
-                  {review.user.name?.[0]?.toUpperCase() ?? '?'}
-                </span>
-              )}
-            </div>
+            <UserAvatarDisplay
+              image={review.user.image}
+              name={review.user.name}
+              size={28}
+            />
             <span className="text-gn-muted text-xs font-semibold truncate max-w-[90px]">
               {review.user.name ?? 'Gamer'}
             </span>

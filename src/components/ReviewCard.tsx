@@ -10,6 +10,7 @@ import { Crown, Trophy, Medal, Shield, Heart, Sword } from '@pxlkit/gamification
 import { toast } from '@/lib/toast'
 import { getRatingData, getRatingChipClass } from '@/lib/rating'
 import { toggleReviewLikeAction } from '@/actions/reviews'
+import UserAvatarDisplay from './UserAvatarDisplay'
 
 interface Review {
   id: string
@@ -35,19 +36,6 @@ interface ReviewCardProps {
 }
 
 const ICON_MAP = { Sword, Heart, Shield, Medal, Trophy, Crown } as const
-
-const RATING_META = {
-  1:  { label: 'Jugable',        color: '#6b7280' },
-  2:  { label: 'Jugable',        color: '#6b7280' },
-  3:  { label: 'Entretenido',    color: '#3b82f6' },
-  4:  { label: 'Entretenido',    color: '#3b82f6' },
-  5:  { label: 'Recomendado',    color: '#a855f7' },
-  6:  { label: 'Recomendado',    color: '#a855f7' },
-  7:  { label: 'Muy Bueno',      color: '#06b6d4' },
-  8:  { label: 'Muy Bueno',      color: '#06b6d4' },
-  9:  { label: 'Imprescindible', color: '#f97316' },
-  10: { label: 'Obra Maestra',   color: '#fbbf24' },
-} as const
 
 function RatingDisplay({ rating }: { rating: number }) {
   const { iconName, label } = getRatingData(rating)
@@ -110,7 +98,6 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
   const [hoveredRating, setHoveredRating] = useState(0)
   const [error,        setError]        = useState('')
 
-  // Estado optimista del like
   const [liked,      setLiked]      = useState(review.likedByCurrentUser)
   const [likeCount,  setLikeCount]  = useState(review.likeCount)
   const [isLiking,   setIsLiking]   = useState(false)
@@ -118,7 +105,6 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
   const handleToggleLike = async () => {
     if (isOwn || isLiking) return
 
-    // Actualización optimista
     const prevLiked = liked
     const prevCount = likeCount
     setLiked(!prevLiked)
@@ -130,7 +116,6 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
       setLiked(result.liked)
       setLikeCount(result.likeCount)
     } catch (error) {
-      // Revertir si falla
       setLiked(prevLiked)
       setLikeCount(prevCount)
       toast.error(error instanceof Error ? error.message : 'No se pudo registrar el voto')
@@ -201,37 +186,20 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
         <div className="flex items-center space-x-3">
           {review.user.username ? (
             <Link href={`/profile/${review.user.username}`} className="flex-shrink-0">
-              <div className="w-10 h-10 rounded-full bg-gn-card border border-white/[0.06]
-                              flex items-center justify-center overflow-hidden
-                              hover:ring-2 hover:ring-gn-primary/30 transition-all">
-                {review.user.image ? (
-                  <img
-                    src={review.user.image}
-                    alt={review.user.displayName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-gn-muted text-lg font-semibold">
-                    {review.user.displayName.charAt(0).toUpperCase()}
-                  </span>
-                )}
+              <div className="hover:ring-2 hover:ring-gn-primary/30 rounded-full transition-all">
+                <UserAvatarDisplay
+                  image={review.user.image}
+                  name={review.user.displayName}
+                  size={40}
+                />
               </div>
             </Link>
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gn-card border border-white/[0.06]
-                            flex items-center justify-center overflow-hidden flex-shrink-0">
-              {review.user.image ? (
-                <img
-                  src={review.user.image}
-                  alt={review.user.displayName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-gn-muted text-lg font-semibold">
-                  {review.user.displayName.charAt(0).toUpperCase()}
-                </span>
-              )}
-            </div>
+            <UserAvatarDisplay
+              image={review.user.image}
+              name={review.user.displayName}
+              size={40}
+            />
           )}
 
           <div>
@@ -292,7 +260,6 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
         )}
       </div>
 
-      {/* Puntuación */}
       {isEditing ? (
         <div className="mb-4">
           <label className="block text-sm font-semibold text-gn-text mb-2">
@@ -337,7 +304,6 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
         </div>
       )}
 
-      {/* Contenido */}
       {isEditing ? (
         <div className="mb-4">
           <label className="block text-sm font-semibold text-gn-text mb-2">
@@ -384,7 +350,6 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
         </div>
       )}
 
-      {/* Footer: botón de like */}
       {!isEditing && (
         <div className="flex items-center justify-end mt-1 pt-3 border-t border-white/[0.04]">
           <button

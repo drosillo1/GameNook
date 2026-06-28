@@ -7,42 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { GamepadIcon, ChevronDownIcon, ShieldIcon, MenuIcon, XIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-
-// ── Avatar con iniciales ───────────────────────────────────────
-function UserAvatar({ image, name, email, size = 6 }: {
-  image?: string | null
-  name?:  string | null
-  email?: string | null
-  size?:  number
-}) {
-  const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase()
-  const colors = [
-    '#e63946', '#f4a261', '#a855f7', '#3b82f6',
-    '#10b981', '#f59e0b', '#ec4899', '#06b6d4',
-  ]
-  const color = colors[(initial.charCodeAt(0) ?? 0) % colors.length]
-  const sizeClass = `w-${size} h-${size}`
-
-  if (image) {
-    return (
-      <img
-        src={image}
-        alt={name ?? 'Usuario'}
-        className={`${sizeClass} rounded-full object-cover`}
-      />
-    )
-  }
-
-  return (
-    <div
-      className={`${sizeClass} rounded-full flex items-center justify-center
-                  text-white font-bold flex-shrink-0`}
-      style={{ background: color, fontSize: size * 2.2 }}
-    >
-      {initial}
-    </div>
-  )
-}
+import UserAvatarDisplay from './UserAvatarDisplay'
 
 export default function Navigation() {
   const { data: session } = useSession()
@@ -77,6 +42,16 @@ export default function Navigation() {
   ]
 
   const visibleLinks = navLinks.filter(l => l.always || session)
+
+  const openDropdown = () => {
+    setMobileOpen(false)
+    setDropdownOpen(prev => !prev)
+  }
+
+  const openMobileMenu = () => {
+    setDropdownOpen(false)
+    setMobileOpen(prev => !prev)
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-gn-bg/85 backdrop-blur-xl border-b border-white/[0.06]">
@@ -136,15 +111,15 @@ export default function Navigation() {
           {session ? (
             <div className="relative">
               <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
+                onClick={openDropdown}
                 className="flex items-center gap-2 bg-gn-card border border-white/[0.08]
                            rounded-lg px-3 py-1.5 hover:border-white/15 transition-colors"
               >
-                <UserAvatar
+                <UserAvatarDisplay
                   image={session.user?.image}
                   name={session.user?.name}
                   email={session.user?.email}
-                  size={6}
+                  size={24}
                 />
                 <span className="text-gn-text text-sm font-semibold hidden sm:block
                                  max-w-[100px] truncate">
@@ -163,12 +138,12 @@ export default function Navigation() {
                   <div className="absolute right-0 top-full mt-2 w-52 bg-gn-card border
                                   border-white/[0.08] rounded-xl overflow-hidden shadow-xl z-20">
 
-                    <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-3">
-                      <UserAvatar
+                    <div className="px-4 py-3 flex items-center gap-3">
+                      <UserAvatarDisplay
                         image={session.user?.image}
                         name={session.user?.name}
                         email={session.user?.email}
-                        size={8}
+                        size={32}
                       />
                       <div className="min-w-0">
                         <p className="text-gn-text text-xs font-semibold truncate">
@@ -185,39 +160,6 @@ export default function Navigation() {
                           </span>
                         )}
                       </div>
-                    </div>
-
-                    <div className="p-1">
-                      {[
-                        { href: profileHref,   label: 'Mi perfil'    },
-                        { href: '/collection', label: 'Mi colección' },
-                      ].map(item => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setDropdownOpen(false)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-                                      transition-colors ${
-                            pathname === item.href
-                              ? 'text-gn-text bg-white/5'
-                              : 'text-gn-muted hover:text-gn-text hover:bg-white/5'
-                          }`}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-
-                      {isAdmin && (
-                        <Link
-                          href="/admin"
-                          onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-                                     text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/5
-                                     transition-colors"
-                        >
-                          Panel de admin
-                        </Link>
-                      )}
                     </div>
 
                     <div className="h-px bg-white/[0.06]" />
@@ -248,7 +190,7 @@ export default function Navigation() {
 
           {/* ── Hamburguesa ── */}
           <button
-            onClick={() => setMobileOpen(!mobileOpen)}
+            onClick={openMobileMenu}
             className={`md:hidden flex items-center justify-center w-9 h-9 rounded-lg
                        border transition-colors ${
                          mobileOpen
@@ -279,11 +221,11 @@ export default function Navigation() {
               {session && (
                 <div className="flex items-center gap-3 px-3 py-3 mb-2
                                 bg-gn-card border border-white/[0.06] rounded-xl">
-                  <UserAvatar
+                  <UserAvatarDisplay
                     image={session.user?.image}
                     name={session.user?.name}
                     email={session.user?.email}
-                    size={10}
+                    size={40}
                   />
                   <div className="min-w-0">
                     <p className="text-gn-text text-sm font-semibold truncate">
@@ -296,7 +238,7 @@ export default function Navigation() {
                 </div>
               )}
 
-              {visibleLinks.filter(l => !l.isProfile).map(l => (
+              {visibleLinks.map(l => (
                 <Link
                   key={l.href}
                   href={l.href}
@@ -328,23 +270,13 @@ export default function Navigation() {
               <div className="h-px bg-white/[0.06] my-1" />
 
               {session ? (
-                <>
-                  <Link
-                    href={profileHref}
-                    onClick={() => setMobileOpen(false)}
-                    className="px-3 py-2.5 rounded-lg text-sm text-gn-muted
-                               hover:text-gn-text hover:bg-white/[0.04] transition-colors"
-                  >
-                    Mi perfil
-                  </Link>
-                  <button
-                    onClick={() => { signOut(); setMobileOpen(false) }}
-                    className="text-left px-3 py-2.5 rounded-lg text-sm text-gn-primary
-                               hover:bg-gn-primary/10 transition-colors"
-                  >
-                    Cerrar sesión
-                  </button>
-                </>
+                <button
+                  onClick={() => { signOut(); setMobileOpen(false) }}
+                  className="text-left px-3 py-2.5 rounded-lg text-sm text-gn-primary
+                             hover:bg-gn-primary/10 transition-colors"
+                >
+                  Cerrar sesión
+                </button>
               ) : (
                 <Link
                   href="/auth/signin"

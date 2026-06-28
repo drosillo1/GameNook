@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -35,21 +35,24 @@ model Session {
 }
 
 model User {
-  id            String           @id @default(cuid())
-  name          String?
-  email         String           @unique
-  emailVerified DateTime?
-  image         String?
-  username      String?          @unique
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  role          Role             @default(USER)
-  accounts      Account[]
-  games         Game[]           @relation("SubmittedGames")
-  collection    GameCollection[]
-  reviews       Review[]
-  reviewLikes   ReviewLike[]
-  sessions      Session[]
+  id                String           @id @default(cuid())
+  name              String?
+  email             String           @unique
+  emailVerified     DateTime?
+  image             String?
+  username          String?          @unique
+  bio               String?
+  location          String?
+  favoritePlatforms String[]        @default([])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  role              Role             @default(USER)
+  accounts          Account[]
+  games             Game[]           @relation("SubmittedGames")
+  collection        GameCollection[]
+  reviews           Review[]
+  reviewLikes       ReviewLike[]
+  sessions          Session[]
 }
 
 model VerificationToken {
