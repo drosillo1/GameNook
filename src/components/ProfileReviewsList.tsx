@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { HeartIcon } from 'lucide-react'
 import { RatingBadge } from '@/components/RatingBadge'
 
 const PAGE_SIZE = 10
@@ -20,6 +21,7 @@ interface ProfileReview {
   rating: number
   content: string | null
   createdAt: string
+  likeCount?: number
   game: {
     id: string
     title: string
@@ -31,9 +33,63 @@ interface ProfileReview {
 
 interface Props {
   reviews: ProfileReview[]
+  featuredReviews?: ProfileReview[]
 }
 
-export default function ProfileReviewsList({ reviews }: Props) {
+function ReviewRow({ review }: { review: ProfileReview }) {
+  return (
+    <Link
+      href={`/games/${review.game.slug}`}
+      className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02]
+                 transition-colors group"
+    >
+      {/* Thumbnail */}
+      <div className="w-14 h-10 bg-gn-surface rounded-lg overflow-hidden
+                      flex-shrink-0 flex items-center justify-center">
+        {review.game.imageUrl ? (
+          <img
+            src={review.game.imageUrl}
+            alt={review.game.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-lg">🎮</span>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-gn-text text-sm font-semibold truncate
+                      group-hover:text-gn-primary transition-colors">
+          {review.game.title}
+        </p>
+        {review.content ? (
+          <p className="text-gn-muted text-xs truncate mt-0.5">
+            {review.content}
+          </p>
+        ) : (
+          <p className="text-gn-subtle text-xs mt-0.5">Sin comentario</p>
+        )}
+        <p className="text-gn-subtle text-[11px] mt-1">
+          {new Date(review.createdAt).toLocaleDateString('es-ES')}
+        </p>
+      </div>
+
+      {/* Likes (si los hay) */}
+      {typeof review.likeCount === 'number' && review.likeCount > 0 && (
+        <div className="flex items-center gap-1 text-gn-muted text-xs flex-shrink-0">
+          <HeartIcon className="w-3.5 h-3.5" fill="currentColor" />
+          {review.likeCount}
+        </div>
+      )}
+
+      {/* Rating */}
+      <RatingBadge rating={review.rating} />
+    </Link>
+  )
+}
+
+export default function ProfileReviewsList({ reviews, featuredReviews = [] }: Props) {
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<SortOption>('recent')
 
@@ -60,8 +116,27 @@ export default function ProfileReviewsList({ reviews }: Props) {
     setPage(1) // Reiniciar paginación al cambiar de orden
   }
 
+  const hasFeatured = featuredReviews.length > 0
+
   return (
     <>
+      {/* Destacadas */}
+      {hasFeatured && (
+        <div className="px-6 py-5 border-b border-white/[0.06] bg-gn-primary/[0.03]">
+          <div className="flex items-center gap-1.5 mb-3">
+            <HeartIcon className="w-3.5 h-3.5 text-gn-primary" fill="currentColor" />
+            <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest">
+              Reseñas destacadas
+            </p>
+          </div>
+          <div className="divide-y divide-white/[0.04] -mx-6">
+            {featuredReviews.map(review => (
+              <ReviewRow key={review.id} review={review} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Selector de orden */}
       <div className="flex items-center justify-end gap-2 px-6 py-3 border-b border-white/[0.06]">
         <span className="text-gn-muted text-xs uppercase tracking-widest font-semibold">
@@ -86,47 +161,7 @@ export default function ProfileReviewsList({ reviews }: Props) {
 
       <div className="divide-y divide-white/[0.04]">
         {visible.map(review => (
-          <Link
-            key={review.id}
-            href={`/games/${review.game.slug}`}
-            className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02]
-                       transition-colors group"
-          >
-            {/* Thumbnail */}
-            <div className="w-14 h-10 bg-gn-surface rounded-lg overflow-hidden
-                            flex-shrink-0 flex items-center justify-center">
-              {review.game.imageUrl ? (
-                <img
-                  src={review.game.imageUrl}
-                  alt={review.game.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-lg">🎮</span>
-              )}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <p className="text-gn-text text-sm font-semibold truncate
-                            group-hover:text-gn-primary transition-colors">
-                {review.game.title}
-              </p>
-              {review.content ? (
-                <p className="text-gn-muted text-xs truncate mt-0.5">
-                  {review.content}
-                </p>
-              ) : (
-                <p className="text-gn-subtle text-xs mt-0.5">Sin comentario</p>
-              )}
-              <p className="text-gn-subtle text-[11px] mt-1">
-                {new Date(review.createdAt).toLocaleDateString('es-ES')}
-              </p>
-            </div>
-
-            {/* Rating */}
-            <RatingBadge rating={review.rating} />
-          </Link>
+          <ReviewRow key={review.id} review={review} />
         ))}
       </div>
 

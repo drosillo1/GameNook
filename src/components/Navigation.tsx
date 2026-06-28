@@ -65,9 +65,14 @@ export default function Navigation() {
 
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'MODERATOR'
 
+  // Link de perfil: directo al username real si está disponible, evita la
+  // redirección extra de /profile -> /profile/[username]
+  const profileHref = session?.user?.username ? `/profile/${session.user.username}` : '/profile'
+
   const navLinks = [
     { href: '/games',      label: 'Juegos',   always: true  },
     { href: '/collection', label: 'Colección', always: false },
+    { href: profileHref,   label: 'Perfil',   always: false, isProfile: true },
     { href: '/games/add',  label: 'Agregar',  always: false },
   ]
 
@@ -184,7 +189,7 @@ export default function Navigation() {
 
                     <div className="p-1">
                       {[
-                        { href: '/profile',    label: 'Mi perfil'    },
+                        { href: profileHref,   label: 'Mi perfil'    },
                         { href: '/collection', label: 'Mi colección' },
                       ].map(item => (
                         <Link
@@ -291,7 +296,7 @@ export default function Navigation() {
                 </div>
               )}
 
-              {visibleLinks.map(l => (
+              {visibleLinks.filter(l => !l.isProfile).map(l => (
                 <Link
                   key={l.href}
                   href={l.href}
@@ -325,7 +330,7 @@ export default function Navigation() {
               {session ? (
                 <>
                   <Link
-                    href="/profile"
+                    href={profileHref}
                     onClick={() => setMobileOpen(false)}
                     className="px-3 py-2.5 rounded-lg text-sm text-gn-muted
                                hover:text-gn-text hover:bg-white/[0.04] transition-colors"

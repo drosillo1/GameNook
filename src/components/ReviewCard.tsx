@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { EditIcon, TrashIcon, MoreVerticalIcon, HeartIcon } from 'lucide-react'
 import { PxlKitIcon } from '@pxlkit/core'
 import { Crown, Trophy, Medal, Shield, Heart, Sword } from '@pxlkit/gamification'
@@ -21,7 +22,8 @@ interface Review {
   user: {
     id: string
     name: string | null
-    username: string
+    username: string | null
+    displayName: string
     image: string | null
   }
 }
@@ -79,7 +81,7 @@ function ExpandableContent({ content }: { content: string }) {
 
   return (
     <div className="mb-3">
-      <p className={`text-gn-text leading-relaxed whitespace-pre-line text-sm
+      <p className={`text-gn-text leading-relaxed whitespace-pre-line break-words text-sm
                      ${!expanded && isLong ? 'line-clamp-4' : ''}`}>
         {content}
       </p>
@@ -197,23 +199,53 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
 
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gn-card border border-white/[0.06]
-                          flex items-center justify-center overflow-hidden">
-            {review.user.image ? (
-              <img
-                src={review.user.image}
-                alt={review.user.name || review.user.username}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-gn-muted text-lg font-semibold">
-                {(review.user.name || review.user.username).charAt(0).toUpperCase()}
-              </span>
-            )}
-          </div>
+          {review.user.username ? (
+            <Link href={`/profile/${review.user.username}`} className="flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-gn-card border border-white/[0.06]
+                              flex items-center justify-center overflow-hidden
+                              hover:ring-2 hover:ring-gn-primary/30 transition-all">
+                {review.user.image ? (
+                  <img
+                    src={review.user.image}
+                    alt={review.user.displayName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-gn-muted text-lg font-semibold">
+                    {review.user.displayName.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+            </Link>
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-gn-card border border-white/[0.06]
+                            flex items-center justify-center overflow-hidden flex-shrink-0">
+              {review.user.image ? (
+                <img
+                  src={review.user.image}
+                  alt={review.user.displayName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-gn-muted text-lg font-semibold">
+                  {review.user.displayName.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+          )}
+
           <div>
             <h4 className="font-semibold text-gn-text text-sm">
-              {review.user.name || review.user.username}
+              {review.user.username ? (
+                <Link
+                  href={`/profile/${review.user.username}`}
+                  className="hover:text-gn-primary transition-colors"
+                >
+                  {review.user.displayName}
+                </Link>
+              ) : (
+                review.user.displayName
+              )}
               {isOwn && <span className="text-xs text-gn-primary ml-2">(Tú)</span>}
             </h4>
             <p className="text-xs text-gn-muted">

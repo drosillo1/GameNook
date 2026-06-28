@@ -61,7 +61,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       select: {
         id: true, rating: true, content: true, createdAt: true, updatedAt: true,
         userId: true, likeCount: true,
-        user: { select: { id: true, name: true, email: true, image: true } },
+        user: { select: { id: true, name: true, username: true, email: true, image: true } },
         likes: { select: { userId: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -85,8 +85,11 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     likeCount: r.likeCount,
     likedByCurrentUser: currentUserId ? r.likes.some(l => l.userId === currentUserId) : false,
     user: {
-      ...r.user,
-      username: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario',
+      id:          r.user.id,
+      name:        r.user.name,
+      username:    r.user.username,
+      displayName: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario',
+      image:       r.user.image,
     },
   }))
 
