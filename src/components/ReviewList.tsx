@@ -13,13 +13,13 @@ interface Review {
   content: string | null
   createdAt: string
   updatedAt: string
-  userId: string
   likeCount: number
   likedByCurrentUser: boolean
   user: {
     id: string
     name: string | null
-    username: string
+    username: string | null
+    displayName: string
     image: string | null
   }
 }
