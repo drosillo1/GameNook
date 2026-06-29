@@ -164,9 +164,6 @@ export default function OnboardingPage() {
                 <div className="flex items-center bg-white/[0.03] border border-white/[0.06]
                                 rounded-lg overflow-hidden focus-within:border-gn-primary/40
                                 focus-within:ring-1 focus-within:ring-gn-primary/20 transition-all">
-                  <span className="pl-3.5 text-gn-subtle text-sm select-none">
-                    gamenook.es/profile/
-                  </span>
                   <input
                     type="text"
                     value={username}

@@ -204,14 +204,21 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
 
         {/* ── STATS RESEÑAS ── */}
         <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 mb-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/[0.06]">
+          <div className="grid grid-cols-2 sm:grid-cols-4">
             {[
               { label: 'Reseñas', value: totalReviews, color: 'text-gn-primary' },
               { label: 'Rating medio', value: avgRating > 0 ? avgRating.toFixed(1) : '—', color: 'text-yellow-400' },
               { label: 'Reseñas este año', value: reviewsThisYear, color: 'text-cyan-400' },
               { label: 'Imprescindibles', value: levelCounts['Imprescindible'] + levelCounts['Obra Maestra'], color: 'text-orange-400' },
-            ].map(s => (
-              <div key={s.label} className="text-center px-2">
+            ].map((s, i) => (
+              <div
+                key={s.label}
+                className={`text-center px-2 border-white/[0.06] ${
+                  i % 2 === 0 ? 'border-r sm:border-r-0' : ''
+                } ${
+                  i > 0 ? 'sm:border-l' : ''
+                }`}
+              >
                 <div className={`font-display font-black text-3xl ${s.color}`}>{s.value}</div>
                 <div className="text-gn-muted text-xs uppercase tracking-widest mt-1">{s.label}</div>
               </div>

@@ -129,7 +129,10 @@ export default function AddGamePage() {
   }
 
   if (!session) {
-    router.push('/auth/signin')
+    // Conserva la URL actual (incluyendo ?q=... si venía de "Agregar juego"
+    // desde el buscador sin resultados) para volver aquí tras iniciar sesión.
+    const callbackUrl = `/games/add${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+    router.push(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`)
     return null
   }
 

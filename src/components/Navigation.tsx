@@ -138,7 +138,12 @@ export default function Navigation() {
                   <div className="absolute right-0 top-full mt-2 w-52 bg-gn-card border
                                   border-white/[0.08] rounded-xl overflow-hidden shadow-xl z-20">
 
-                    <div className="px-4 py-3 flex items-center gap-3">
+                    <Link
+                      href={profileHref}
+                      onClick={() => setDropdownOpen(false)}
+                      className="px-4 py-3 flex items-center gap-3 hover:bg-white/[0.04]
+                                 transition-colors"
+                    >
                       <UserAvatarDisplay
                         image={session.user?.image}
                         name={session.user?.name}
@@ -160,7 +165,7 @@ export default function Navigation() {
                           </span>
                         )}
                       </div>
-                    </div>
+                    </Link>
 
                     <div className="h-px bg-white/[0.06]" />
 

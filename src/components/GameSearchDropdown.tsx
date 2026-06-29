@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { SearchIcon, LoaderIcon, XIcon } from 'lucide-react'
+import { SearchIcon, LoaderIcon, XIcon, PlusIcon } from 'lucide-react'
 
 interface SearchGame {
   id: string
@@ -72,6 +72,11 @@ export default function GameSearchDropdown() {
     setOpen(false)
   }
 
+  const handleAddGame = () => {
+    setOpen(false)
+    router.push(`/games/add?q=${encodeURIComponent(query.trim())}`)
+  }
+
   return (
     <div ref={wrapperRef} className="relative flex-1 min-w-[200px]">
 
@@ -84,7 +89,7 @@ export default function GameSearchDropdown() {
           value={query}
           onChange={e => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="Buscar juegos, géneros..."
+          placeholder="Buscar juegos..."
           className="w-full pl-10 pr-9 py-2.5 bg-gn-card border border-white/[0.06]
                      rounded-xl text-gn-text placeholder-gn-muted text-sm
                      focus:outline-none focus:border-gn-primary/40
@@ -151,13 +156,24 @@ export default function GameSearchDropdown() {
         </div>
       )}
 
-      {/* Sin resultados */}
+      {/* Sin resultados — sugerir agregar el juego */}
       {open && !loading && results.length === 0 && query.trim().length >= 2 && (
         <div className="absolute top-full left-0 right-0 mt-1.5 bg-gn-card border
                         border-white/[0.08] rounded-xl p-4 text-center shadow-xl z-50">
-          <p className="text-gn-muted text-sm">
+          <p className="text-gn-muted text-sm mb-3">
             No se encontraron resultados para "{query}"
           </p>
+          <button
+            type="button"
+            onClick={handleAddGame}
+            className="inline-flex items-center gap-1.5 bg-gn-primary hover:bg-gn-primary-dark
+                       text-white text-xs font-bold uppercase tracking-wider
+                       px-4 py-2 rounded-lg shadow-gn-red transition-all duration-200
+                       hover:-translate-y-0.5"
+          >
+            <PlusIcon className="w-3.5 h-3.5" />
+            Agregar "{query}"
+          </button>
         </div>
       )}
     </div>
