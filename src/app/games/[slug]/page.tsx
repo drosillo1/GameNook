@@ -9,7 +9,6 @@ import { authOptions } from '@/lib/auth'
 import ReviewForm from '@/components/ReviewForm'
 import { Calendar, Monitor, ChevronLeft } from 'lucide-react'
 import CollectionButton from '@/components/CollectionButton'
-import { RatingIcon } from '@/components/RatingIcon'
 import { getRatingData, getRatingBarColor } from '@/lib/rating'
 import IGDBGameDetails from '@/components/IGDBGameDetails'
 import ReviewList from '@/components/ReviewList'
@@ -94,7 +93,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   }))
 
   // ── Reseñas destacadas (top por likes) ──
-  // Solo se muestran si hay suficientes reseñas con votos como para que la sección aporte algo
   const likedReviews = reviewsWithUsernames.filter(r => r.likeCount > 0)
   const showFeatured = reviewsWithUsernames.length >= FEATURED_MIN_TOTAL_REVIEWS
     && likedReviews.length >= FEATURED_MIN_LIKED_REVIEWS
@@ -173,12 +171,15 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             <div className="mt-auto bg-gn-primary/5 border border-gn-primary/15 rounded-xl p-4 flex items-center gap-6 flex-wrap">
               <div className="flex-shrink-0">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="font-display font-black text-5xl text-gn-primary" style={{ fontFamily: 'Orbitron, monospace' }}>
+                  <span
+                    className="font-display font-black text-5xl leading-none tracking-[-0.08em]"
+                    style={{ color: ratingData.color, fontFamily: 'Orbitron, monospace' }}
+                  >
                     {stats.average > 0 ? stats.average.toFixed(1) : '—'}
                   </span>
                   {stats.average > 0 && <span className="text-gn-muted text-lg">/10</span>}
                 </div>
-                <div className={`text-sm font-semibold uppercase tracking-wider mt-0.5 ${ratingData.tailwind}`}>
+                <div className={`text-sm font-semibold uppercase tracking-wider -mt-0.5 ${ratingData.tailwind}`}>
                   {stats.average > 0 ? ratingData.label : 'Sin reseñas'}
                 </div>
               </div>
@@ -194,32 +195,41 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           </div>
         </div>
 
-        {/* Content Grid */}
-        <div className="grid lg:grid-cols-[1fr_2fr] gap-6 mb-8">
-          <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 lg:sticky lg:top-20 lg:h-fit">
-            <h2 className="font-display font-bold text-sm tracking-wide text-gn-text mb-5">{userReview ? 'Tu reseña' : 'Escribe una reseña'}</h2>
+        {/* ── Sección: Tu reseña ── */}
+        <div className="mb-6">
+          <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6">
+            <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">// Tu opinión</p>
+            <h2 className="font-display font-bold text-lg text-gn-text mb-5">
+              {userReview ? 'Tu reseña' : 'Escribe una reseña'}
+            </h2>
             {session ? (
               <ReviewForm key={userReview?.id ?? 'new'} gameId={game.id} existingReview={userReview} />
             ) : (
               <div className="text-center py-8">
-                <Link href="/auth/signin" className="inline-flex items-center gap-2 bg-gn-primary hover:bg-gn-primary-dark text-white text-sm font-bold uppercase tracking-wider px-5 py-2.5 rounded-lg">
+                <p className="text-gn-muted text-sm mb-4">Inicia sesión para compartir tu opinión</p>
+                <Link href="/auth/signin" className="inline-flex items-center gap-2 bg-gn-primary hover:bg-gn-primary-dark text-white text-sm font-bold uppercase tracking-wider px-5 py-2.5 rounded-lg transition-colors">
                   ▶ Iniciar sesión
                 </Link>
               </div>
             )}
           </div>
+        </div>
 
-          <div className="bg-gn-card border border-white/[0.06] rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/[0.06] flex justify-between items-center">
-              <h2 className="font-display font-bold text-sm tracking-wide text-gn-text">Reseñas</h2>
-              <span className="text-gn-muted text-xs">{stats.total} reseñas</span>
+        {/* ── Sección: Reseñas de la comunidad ── */}
+        <div className="mb-8">
+          <div className="flex items-baseline justify-between mb-5">
+            <div>
+              <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">// Reseñas</p>
+              <h2 className="font-display font-bold text-lg text-gn-text">Opiniones de la comunidad</h2>
             </div>
-            <ReviewList
-              reviews={remainingReviews}
-              featuredReviews={featuredReviews}
-              currentUserId={currentUserId}
-            />
+            <span className="text-gn-muted text-sm">{stats.total} {stats.total === 1 ? 'reseña' : 'reseñas'}</span>
           </div>
+
+          <ReviewList
+            reviews={remainingReviews}
+            featuredReviews={featuredReviews}
+            currentUserId={currentUserId}
+          />
         </div>
 
         {game.igdbId && <IGDBGameDetails igdbId={game.igdbId} gameSlug={game.slug} />}

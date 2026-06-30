@@ -50,16 +50,17 @@ export default function ReviewList({ reviews, featuredReviews = [], currentUserI
   }
 
   return (
-    <>
+    <div className="space-y-6">
+      {/* Reseñas destacadas */}
       {hasFeatured && (
-        <div className="px-6 py-5 border-b border-white/[0.06] bg-gn-primary/[0.03]">
+        <div>
           <div className="flex items-center gap-1.5 mb-4">
             <HeartIcon className="w-3.5 h-3.5 text-gn-primary" fill="currentColor" />
             <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest">
               Reseñas destacadas
             </p>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {featuredReviews.map(review => (
               <ReviewCard
                 key={review.id}
@@ -71,21 +72,30 @@ export default function ReviewList({ reviews, featuredReviews = [], currentUserI
         </div>
       )}
 
+      {/* Todas las reseñas */}
       {total > 0 && (
-        <div className="divide-y divide-white/[0.04]">
-          {visible.map((review) => (
-            <div key={review.id} className="px-6 py-5">
+        <div>
+          {hasFeatured && (
+            <div className="flex items-center gap-1.5 mb-4">
+              <p className="text-gn-muted text-xs font-semibold uppercase tracking-widest">
+                Todas las reseñas
+              </p>
+            </div>
+          )}
+          <div className="space-y-3">
+            {visible.map((review) => (
               <ReviewCard
+                key={review.id}
                 review={review}
                 currentUserId={currentUserId}
               />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {hasMore && (
-        <div className="px-6 py-4 border-t border-white/[0.06] text-center">
+        <div className="text-center pt-2">
           <button
             onClick={() => setPage(p => p + 1)}
             className="text-gn-muted hover:text-gn-primary text-xs font-semibold
@@ -95,6 +105,6 @@ export default function ReviewList({ reviews, featuredReviews = [], currentUserI
           </button>
         </div>
       )}
-    </>
+    </div>
   )
 }
