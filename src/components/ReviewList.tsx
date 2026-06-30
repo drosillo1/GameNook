@@ -21,6 +21,7 @@ interface Review {
     username: string | null
     displayName: string
     image: string | null
+    avatar: string | null
   }
 }
 
