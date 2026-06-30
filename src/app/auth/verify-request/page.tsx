@@ -48,11 +48,11 @@ export default function VerifyRequest() {
           </p>
 
           <h1 className="font-display font-black text-2xl text-gn-text mb-3">
-            Enlace enviado
+            Si la dirección es correcta...
           </h1>
 
           <p className="text-gn-muted text-sm leading-relaxed mb-6">
-            Te hemos enviado un enlace mágico de acceso.
+            ...en breve recibirás un enlace de acceso a esa dirección.
             Haz click en él para entrar a GameNook.
             <br /><br />
             El enlace expira en <span className="text-gn-text font-semibold">24 horas</span>.
@@ -69,6 +69,7 @@ export default function VerifyRequest() {
               <li>→ Revisa la carpeta de spam</li>
               <li>→ El email viene de <span className="text-gn-text">noreply@gamenook</span></li>
               <li>→ Puede tardar hasta 1-2 minutos</li>
+              <li>→ Si escribiste mal tu correo, vuelve atrás e inténtalo de nuevo</li>
             </ul>
           </div>
 

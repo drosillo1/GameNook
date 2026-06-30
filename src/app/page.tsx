@@ -102,9 +102,7 @@ export default async function Home() {
           }}
         />
 
-        <div className="hidden md:block">
-          <HeroCharacters />
-        </div>
+        <HeroCharacters />
 
         <div className="relative z-10 max-w-2xl mx-auto">
           <h1

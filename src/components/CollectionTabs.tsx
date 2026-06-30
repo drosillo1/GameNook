@@ -1,13 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { PlayIcon, CheckIcon, ClockIcon, XIcon } from 'lucide-react'
 import { RatingIcon } from './RatingIcon'
 
+const PAGE_SIZE = 12
+
+type SortOption = 'recent' | 'oldest' | 'alphabetical' | 'rating_desc'
+
+const SORT_LABELS: Record<SortOption, string> = {
+  recent:       'Añadidos recientemente',
+  oldest:       'Añadidos hace más tiempo',
+  alphabetical: 'Alfabético (A-Z)',
+  rating_desc:  'Mejor puntuados',
+}
+
 type CollectionEntry = {
-  id:     string
-  status: string
+  id:        string
+  status:    string
+  createdAt: Date
   game: {
     id:        string
     title:     string
@@ -93,7 +105,8 @@ function GameCard({ entry, statusKey }: { entry: CollectionEntry; statusKey: key
                  hover:border-gn-primary/30 hover:-translate-y-1 hover:shadow-[0_8px_24px_-8px_rgba(230,57,70,0.25)]
                  transition-all duration-200 flex flex-col"
     >
-      <div className="aspect-video bg-gn-surface relative overflow-hidden">
+      {/* Portada del juego — formato vertical completo, sin recortes (igual que en perfil) */}
+      <div className="relative aspect-[3/4] bg-gn-surface overflow-hidden flex-shrink-0">
         {game.imageUrl ? (
           <img
             src={game.imageUrl}
@@ -185,14 +198,45 @@ export default function CollectionTabs({ grouped, initialTab }: {
   initialTab?: keyof Grouped
 }) {
   const [active, setActive] = useState<keyof Grouped>(initialTab ?? 'PLAYING')
+  const [page, setPage]     = useState(1)
+  const [sort, setSort]     = useState<SortOption>('recent')
+
+  // Al cambiar de tab volvemos a la primera página — evita que un tab con
+  // pocos juegos herede una página alta de otro tab con más volumen.
+  useEffect(() => {
+    setPage(1)
+  }, [active])
 
   const games = grouped[active]
 
+  const sortedGames = useMemo(() => {
+    const copy = [...games]
+    switch (sort) {
+      case 'oldest':
+        return copy.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      case 'alphabetical':
+        return copy.sort((a, b) => a.game.title.localeCompare(b.game.title, 'es'))
+      case 'rating_desc':
+        // Juegos sin reseña van al final, no se mezclan con los puntuados
+        return copy.sort((a, b) => (b.game.userReview?.rating ?? -1) - (a.game.userReview?.rating ?? -1))
+      case 'recent':
+      default:
+        return copy.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    }
+  }, [games, sort])
+
+  const totalPages = Math.ceil(sortedGames.length / PAGE_SIZE)
+  const visible = sortedGames.slice(0, page * PAGE_SIZE)
+  const hasMore = page < totalPages
+
+  const handleSortChange = (newSort: SortOption) => {
+    setSort(newSort)
+    setPage(1)
+  }
+
   return (
     <div>
-      {/* Stat cards — ahora son botones que cambian el tab activo sin
-          recargar la página (antes eran <Link href="?tab=..."> que
-          forzaban una navegación completa). */}
+      {/* Stat cards — son botones que cambian el tab activo sin recargar la página */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         {TABS.map(tab => {
           const count    = grouped[tab.key].length
@@ -213,30 +257,53 @@ export default function CollectionTabs({ grouped, initialTab }: {
         })}
       </div>
 
-      <div className="flex gap-0 border-b border-white/[0.06] mb-6 overflow-x-auto">
-        {TABS.map(tab => {
-          const count    = grouped[tab.key].length
-          const isActive = active === tab.key
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActive(tab.key)}
-              className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase
-                          tracking-wider border-b-2 transition-all duration-150 whitespace-nowrap
-                          ${isActive
-                            ? `${tab.text} border-current`
-                            : 'border-transparent text-gn-muted hover:text-gn-text'
-                          }`}
-            >
-              {tab.icon}
-              {TAB_PLURALS[tab.key]}
-              <span className={`px-1.5 py-0.5 rounded text-[10px] font-black
-                                ${isActive ? `${tab.bg} ${tab.text}` : 'bg-white/[0.04] text-gn-muted'}`}>
-                {count}
-              </span>
-            </button>
-          )
-        })}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] mb-6">
+        <div className="flex gap-0 overflow-x-auto">
+          {TABS.map(tab => {
+            const count    = grouped[tab.key].length
+            const isActive = active === tab.key
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActive(tab.key)}
+                className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase
+                            tracking-wider border-b-2 transition-all duration-150 whitespace-nowrap
+                            ${isActive
+                              ? `${tab.text} border-current`
+                              : 'border-transparent text-gn-muted hover:text-gn-text'
+                            }`}
+              >
+                {tab.icon}
+                {TAB_PLURALS[tab.key]}
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-black
+                                  ${isActive ? `${tab.bg} ${tab.text}` : 'bg-white/[0.04] text-gn-muted'}`}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="flex items-center gap-2 pb-3">
+          <span className="text-gn-muted text-xs uppercase tracking-widest font-semibold">
+            Ordenar:
+          </span>
+          <select
+            value={sort}
+            onChange={e => handleSortChange(e.target.value as SortOption)}
+            className="bg-white/[0.03] border border-white/[0.06] rounded-lg
+                       px-3 py-1.5 text-gn-text text-xs font-semibold
+                       focus:outline-none focus:border-gn-primary/40
+                       focus:ring-1 focus:ring-gn-primary/20
+                       cursor-pointer transition-all"
+          >
+            {Object.entries(SORT_LABELS).map(([value, label]) => (
+              <option key={value} value={value} className="bg-gn-card">
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {games.length === 0 ? (
@@ -245,11 +312,25 @@ export default function CollectionTabs({ grouped, initialTab }: {
           <p className="text-sm">No tienes juegos en esta categoría todavía</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {games.map(entry => (
-            <GameCard key={entry.id} entry={entry} statusKey={active} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {visible.map(entry => (
+              <GameCard key={entry.id} entry={entry} statusKey={active} />
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="pt-6 text-center">
+              <button
+                onClick={() => setPage(p => p + 1)}
+                className="text-gn-muted hover:text-gn-primary text-xs font-semibold
+                           uppercase tracking-widest transition-colors"
+              >
+                Ver más juegos ({sortedGames.length - visible.length} restantes)
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

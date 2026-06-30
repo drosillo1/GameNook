@@ -1,21 +1,16 @@
-// src/app/layout.tsx — versión completa con CookieBanner, enlaces legales y Vercel Analytics
-
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 // @ts-ignore: side-effect import of global CSS may not have module declarations in this TS setup
 import './globals.css'
 import { Providers } from './providers'
 import Navigation from '@/components/Navigation'
-import { Orbitron, Rajdhani } from 'next/font/google'
 import { getCurrentYear } from '@/lib/year'
 import Toaster from '@/components/Toaster'
 import CookieBanner from '@/components/CookieBanner'
 import { Analytics } from '@vercel/analytics/react' // <-- Importamos las analíticas de Vercel
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
-const inter    = Inter({ subsets: ['latin'] })
-const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-display', weight: ['400','700','900'], display: 'swap', })
-const rajdhani = Rajdhani({ subsets: ['latin'], variable: '--font-body',    weight: ['400','500','600'],display: 'swap', })
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.gamenook.es'),
@@ -69,24 +64,15 @@ export default function RootLayout({
 
                 {/* ── Enlaces legales ── */}
                 <nav className="flex items-center gap-4 text-xs text-gn-muted">
-                  <a
-                    href="/legal/aviso-legal"
-                    className="hover:text-gn-text transition-colors"
-                  >
+                  <a href="/legal/aviso-legal" className="hover:text-gn-text transition-colors">
                     Aviso legal
                   </a>
                   <span className="text-white/[0.08]">·</span>
-                  <a
-                    href="/legal/privacidad"
-                    className="hover:text-gn-text transition-colors"
-                  >
+                  <a href="/legal/privacidad" className="hover:text-gn-text transition-colors">
                     Privacidad
                   </a>
                   <span className="text-white/[0.08]">·</span>
-                  <a
-                    href="/legal/cookies"
-                    className="hover:text-gn-text transition-colors"
-                  >
+                  <a href="/legal/cookies" className="hover:text-gn-text transition-colors">
                     Cookies
                   </a>
                 </nav>
