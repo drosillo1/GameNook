@@ -89,6 +89,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       username:    r.user.username,
       displayName: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario',
       image:       r.user.image,
+       avatar:      r.user.avatar,
     },
   }))
 
