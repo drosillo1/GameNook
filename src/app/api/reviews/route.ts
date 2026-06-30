@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
             name: true,
             username: true,
             image: true,
+            avatar: true,
           },
         },
         game: {
@@ -140,6 +141,7 @@ export async function GET(request: NextRequest) {
             name: true,
             username: true,
             image: true,
+            avatar: true,
           },
         },
         game: {

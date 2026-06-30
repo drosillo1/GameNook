@@ -129,7 +129,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
         {/* ── HEADER ── */}
         <div className="bg-gn-card border border-white/[0.06] rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-4">
-            <UserAvatarDisplay image={user.image} name={user.name} size={80} />
+            <UserAvatarDisplay avatar={user.avatar} image={user.image} name={user.name} size={80} />
 
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-3">

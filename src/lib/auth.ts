@@ -162,9 +162,10 @@ export const authOptions: NextAuthOptions = {
       if (session?.user && user) {
         session.user.id = user.id
         session.user.role = (user as any).role ?? 'USER'
-        session.user.name = (user as any).name      // refresca nombre tras onboarding
+        session.user.name = (user as any).name
         session.user.image = (user as any).image || session.user.image
-        session.user.username = (user as any).username  // refresca username tras onboarding
+        session.user.username = (user as any).username
+        session.user.avatar = (user as any).avatar ?? null
       }
       return session
     },

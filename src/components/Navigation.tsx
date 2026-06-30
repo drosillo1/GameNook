@@ -116,6 +116,7 @@ export default function Navigation() {
                            rounded-lg px-3 py-1.5 hover:border-white/15 transition-colors"
               >
                 <UserAvatarDisplay
+                  avatar={session.user?.avatar}
                   image={session.user?.image}
                   name={session.user?.name}
                   email={session.user?.email}
@@ -145,10 +146,11 @@ export default function Navigation() {
                                  transition-colors"
                     >
                       <UserAvatarDisplay
+                        avatar={session.user?.avatar}
                         image={session.user?.image}
                         name={session.user?.name}
                         email={session.user?.email}
-                        size={32}
+                        size={24}
                       />
                       <div className="min-w-0">
                         <p className="text-gn-text text-xs font-semibold truncate">
@@ -227,10 +229,11 @@ export default function Navigation() {
                 <div className="flex items-center gap-3 px-3 py-3 mb-2
                                 bg-gn-card border border-white/[0.06] rounded-xl">
                   <UserAvatarDisplay
+                    avatar={session.user?.avatar}
                     image={session.user?.image}
                     name={session.user?.name}
                     email={session.user?.email}
-                    size={40}
+                    size={24}
                   />
                   <div className="min-w-0">
                     <p className="text-gn-text text-sm font-semibold truncate">

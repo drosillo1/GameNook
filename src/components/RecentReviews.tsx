@@ -29,8 +29,9 @@ interface Review {
     imageUrl: string | null
   }
   user: {
-    name:  string | null
-    image: string | null
+    name:   string | null
+    image:  string | null
+    avatar: string | null
   }
 }
 
@@ -79,6 +80,7 @@ function ReviewCard({ review, index }: { review: Review; index: number }) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <UserAvatarDisplay
+              avatar={review.user.avatar}
               image={review.user.image}
               name={review.user.name}
               size={28}

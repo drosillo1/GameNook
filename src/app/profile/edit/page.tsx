@@ -5,9 +5,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ChevronLeft } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { FAVORITE_PLATFORMS, MAX_FAVORITE_PLATFORMS } from '@/lib/platforms'
+import { AVATARS, getAvatarUrl } from '@/lib/avatars'
 
 const BIO_MAX_LENGTH = 160
 const LOCATION_MAX_LENGTH = 50
@@ -20,11 +22,12 @@ export default function EditProfilePage() {
   const [bio,               setBio]               = useState('')
   const [location,          setLocation]          = useState('')
   const [favoritePlatforms, setFavoritePlatforms] = useState<string[]>([])
+  const [avatar,            setAvatar]            = useState<string | null>(null)
   const [isLoaded,          setIsLoaded]          = useState(false)
   const [isSubmitting,      setIsSubmitting]      = useState(false)
   const [error,             setError]             = useState('')
 
-  // Cargar los datos actuales del usuario (la sesión no trae bio/location/favoritePlatforms,
+  // Cargar los datos actuales del usuario (la sesión no trae bio/location/favoritePlatforms/avatar,
   // así que se pide directamente al endpoint de perfil)
   useEffect(() => {
     if (status !== 'authenticated') return
@@ -36,6 +39,7 @@ export default function EditProfilePage() {
         setBio(data.bio ?? '')
         setLocation(data.location ?? '')
         setFavoritePlatforms(data.favoritePlatforms ?? [])
+        setAvatar(data.avatar ?? null)
         setIsLoaded(true)
       })
       .catch(() => {
@@ -50,7 +54,7 @@ export default function EditProfilePage() {
         return prev.filter(p => p !== platform)
       }
       if (prev.length >= MAX_FAVORITE_PLATFORMS) {
-        return prev // ya está en el límite, no añade más
+        return prev
       }
       return [...prev, platform]
     })
@@ -84,6 +88,7 @@ export default function EditProfilePage() {
           bio:               bio.trim() || null,
           location:          location.trim() || null,
           favoritePlatforms,
+          avatar,
         }),
       })
 
@@ -142,6 +147,74 @@ export default function EditProfilePage() {
                 {error}
               </div>
             )}
+
+            {/* Avatar */}
+            <div>
+              <label className="block text-gn-muted text-xs font-semibold uppercase
+                                 tracking-widest mb-3">
+                Avatar
+              </label>
+              <div className="grid grid-cols-5 sm:grid-cols-7 gap-3">
+                {/* Opción: por defecto (foto de Google o gradiente) */}
+                <button
+                  type="button"
+                  onClick={() => setAvatar(null)}
+                  title="Por defecto"
+                  className={`relative aspect-square rounded-full overflow-hidden border-2
+                              transition-all
+                              ${avatar === null
+                                ? 'border-gn-primary ring-2 ring-gn-primary/30 scale-105'
+                                : 'border-white/[0.06] hover:border-white/20 opacity-70 hover:opacity-100'}`}
+                >
+                  {session?.user?.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt="Por defecto"
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center text-white
+                                 font-display font-black text-lg"
+                      style={{ background: 'linear-gradient(135deg, #07070f, #e63946)' }}
+                    >
+                      {(name?.[0] ?? '?').toUpperCase()}
+                    </div>
+                  )}
+                </button>
+
+                {/* Los 20 avatares */}
+                {AVATARS.map(a => {
+                  const isSelected = avatar === a.id
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => setAvatar(a.id)}
+                      title={a.label}
+                      className={`relative aspect-square rounded-full overflow-hidden border-2
+                                  transition-all
+                                  ${isSelected
+                                    ? 'border-gn-primary ring-2 ring-gn-primary/30 scale-105'
+                                    : 'border-white/[0.06] hover:border-white/20 opacity-70 hover:opacity-100'}`}
+                    >
+                      <Image
+                        src={getAvatarUrl(a.id)}
+                        alt={a.label}
+                        fill
+                        className="object-cover"
+                        sizes="56px"
+                      />
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-gn-primary text-xs font-semibold mt-2">
+                {avatar ? AVATARS.find(a => a.id === avatar)?.label : 'Por defecto'}
+              </p>
+            </div>
 
             {/* Nombre visible */}
             <div>

@@ -68,7 +68,7 @@ const getRecentReviews = unstable_cache(
         rating: true,
         content: true,
         game: { select: { title: true, slug: true, imageUrl: true } },
-        user: { select: { name: true, image: true } },
+        user: { select: { name: true, image: true, avatar: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 12,

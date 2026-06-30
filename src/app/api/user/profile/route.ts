@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isValidFavoritePlatform, MAX_FAVORITE_PLATFORMS } from '@/lib/platforms'
+import { isValidAvatar } from '@/lib/avatars'
 
 const BIO_MAX_LENGTH = 160
 const LOCATION_MAX_LENGTH = 50
@@ -16,7 +17,7 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, bio: true, location: true, favoritePlatforms: true },
+    select: { name: true, bio: true, location: true, favoritePlatforms: true, avatar: true },
   })
 
   if (!user) {
@@ -33,13 +34,14 @@ export async function PATCH(request: Request) {
   }
 
   const body = await request.json()
-  const { name, bio, location, favoritePlatforms } = body
+  const { name, bio, location, favoritePlatforms, avatar } = body
 
   const data: {
     name?: string
     bio?: string | null
     location?: string | null
     favoritePlatforms?: string[]
+    avatar?: string | null
   } = {}
 
   // name: igual que en /api/user/name, sin restricción de unicidad
@@ -98,10 +100,21 @@ export async function PATCH(request: Request) {
     data.favoritePlatforms = favoritePlatforms
   }
 
+  // avatar: opcional, null para quitar o string con id válido del catálogo
+  if (avatar !== undefined) {
+    if (avatar === null) {
+      data.avatar = null
+    } else if (typeof avatar !== 'string' || !isValidAvatar(avatar)) {
+      return NextResponse.json({ error: 'Avatar no reconocido' }, { status: 400 })
+    } else {
+      data.avatar = avatar
+    }
+  }
+
   const updated = await prisma.user.update({
     where: { id: session.user.id },
     data,
-    select: { name: true, bio: true, location: true, favoritePlatforms: true },
+    select: { name: true, bio: true, location: true, favoritePlatforms: true, avatar: true },
   })
 
   return NextResponse.json(updated)

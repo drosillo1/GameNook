@@ -1,10 +1,13 @@
 // src/components/UserAvatarDisplay.tsx
 
+import { getAvatarUrl } from '@/lib/avatars'
+
 interface UserAvatarDisplayProps {
-  image?: string | null
-  name?:  string | null
-  email?: string | null
-  size?:  number
+  avatar?: string | null
+  image?:  string | null
+  name?:   string | null
+  email?:  string | null
+  size?:   number
 }
 
 // Gradientes negro -> rojo, variando el ángulo/intensidad para diferenciar iniciales
@@ -20,10 +23,20 @@ const GRADIENTS = [
   'linear-gradient(135deg, #0f0f1c, #e63946)',
 ]
 
-export default function UserAvatarDisplay({ image, name, email, size = 40 }: UserAvatarDisplayProps) {
-  const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase()
-  const gradient = GRADIENTS[(initial.charCodeAt(0) ?? 0) % GRADIENTS.length]
+export default function UserAvatarDisplay({ avatar, image, name, email, size = 40 }: UserAvatarDisplayProps) {
+  // 1. Avatar elegido por el usuario → prioridad máxima
+  if (avatar) {
+    return (
+      <img
+        src={getAvatarUrl(avatar)}
+        alt={name ?? 'Avatar'}
+        style={{ width: size, height: size }}
+        className="rounded-full object-cover flex-shrink-0"
+      />
+    )
+  }
 
+  // 2. Imagen de Google (u otro provider OAuth)
   if (image) {
     return (
       <img
@@ -34,6 +47,10 @@ export default function UserAvatarDisplay({ image, name, email, size = 40 }: Use
       />
     )
   }
+
+  // 3. Fallback: gradiente con inicial
+  const initial = (name?.[0] ?? email?.[0] ?? '?').toUpperCase()
+  const gradient = GRADIENTS[(initial.charCodeAt(0) ?? 0) % GRADIENTS.length]
 
   return (
     <div

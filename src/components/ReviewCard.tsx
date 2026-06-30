@@ -26,6 +26,7 @@ interface Review {
     username: string | null
     displayName: string
     image: string | null
+    avatar: string | null
   }
 }
 
@@ -237,18 +238,19 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
               <Link href={`/profile/${review.user.username}`} className="flex-shrink-0">
                 <div className="hover:ring-2 hover:ring-gn-primary/30 rounded-full transition-all">
                   <UserAvatarDisplay
+                    avatar={review.user.avatar}
                     image={review.user.image}
                     name={review.user.displayName}
                     size={36}
                   />
-                </div>
               </Link>
             ) : (
-              <UserAvatarDisplay
-                image={review.user.image}
-                name={review.user.displayName}
-                size={36}
-              />
+                <UserAvatarDisplay
+                  avatar={review.user.avatar}
+                  image={review.user.image}
+                  name={review.user.displayName}
+                  size={36}
+                />
             )}
 
             <div>

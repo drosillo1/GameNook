@@ -60,7 +60,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       select: {
         id: true, rating: true, content: true, createdAt: true, updatedAt: true,
         userId: true, likeCount: true,
-        user: { select: { id: true, name: true, username: true, email: true, image: true } },
+        user: { select: { id: true, name: true, username: true, email: true, image: true, avatar: true } },
         likes: { select: { userId: true } },
       },
       orderBy: { createdAt: 'desc' },
