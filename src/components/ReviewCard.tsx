@@ -243,14 +243,15 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
                     name={review.user.displayName}
                     size={36}
                   />
+                </div>
               </Link>
             ) : (
-                <UserAvatarDisplay
-                  avatar={review.user.avatar}
-                  image={review.user.image}
-                  name={review.user.displayName}
-                  size={36}
-                />
+              <UserAvatarDisplay
+                avatar={review.user.avatar}
+                image={review.user.image}
+                name={review.user.displayName}
+                size={36}
+              />
             )}
 
             <div>
