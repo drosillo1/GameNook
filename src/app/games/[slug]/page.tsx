@@ -7,12 +7,13 @@ import { unstable_cache } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import ReviewForm from '@/components/ReviewForm'
-import { Calendar, Monitor, ChevronLeft } from 'lucide-react'
+import { Calendar, Monitor, ChevronLeft, Package } from 'lucide-react'
 import CollectionButton from '@/components/CollectionButton'
 import { getRatingData, getRatingBarColor } from '@/lib/rating'
 import IGDBGameDetails from '@/components/IGDBGameDetails'
 import ReviewList from '@/components/ReviewList'
 import GameDescription from '@/components/GameDescription'
+import { getIGDBRelatedDLCIds } from '@/lib/igdb'
 
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
@@ -68,6 +69,20 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   ])
 
   if (!game) notFound()
+
+  // ── DLCs/expansiones: pedimos IDs a IGDB → cruzamos con nuestra BD ──
+  // Solo muestra DLCs que estén dados de alta en el catálogo, como links a sus fichas.
+  let dlcGames: { title: string; slug: string; imageUrl: string | null }[] = []
+  if (game.igdbId) {
+    const dlcIgdbIds = await getIGDBRelatedDLCIds(game.igdbId)
+    if (dlcIgdbIds.length > 0) {
+      dlcGames = await prisma.game.findMany({
+        where: { igdbId: { in: dlcIgdbIds }, status: 'APPROVED' },
+        select: { title: true, slug: true, imageUrl: true },
+        orderBy: { releaseDate: 'desc' },
+      })
+    }
+  }
 
   const stats = calcStats(reviews)
   const userReview = session ? reviews.find(r => r.userId === session.user?.id) : null
@@ -195,6 +210,61 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             </div>
           </div>
         </div>
+
+        {/* ── Sección: Contenido adicional (DLCs dados de alta en el catálogo) ── */}
+        {dlcGames.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Package className="w-4 h-4 text-gn-primary" />
+              <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest">
+                // Contenido adicional
+              </p>
+              <span className="text-gn-muted text-xs">
+                {dlcGames.length} {dlcGames.length === 1 ? 'DLC' : 'DLCs'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {dlcGames.map(dlc => (
+                <Link
+                  key={dlc.slug}
+                  href={`/games/${dlc.slug}`}
+                  className="group bg-gn-card border border-white/[0.06] rounded-xl overflow-hidden
+                             hover:border-gn-primary/30 hover:-translate-y-1
+                             hover:shadow-[0_8px_24px_-8px_rgba(230,57,70,0.25)]
+                             transition-all duration-200"
+                >
+                  <div className="relative aspect-[3/4] bg-gn-surface">
+                    {dlc.imageUrl ? (
+                      <img
+                        src={dlc.imageUrl}
+                        alt={dlc.title}
+                        className="w-full h-full object-cover group-hover:scale-105
+                                   transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gn-muted">
+                        <Package className="w-8 h-8" />
+                      </div>
+                    )}
+                    <div className="absolute top-1.5 left-1.5">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
+                                       bg-gn-bg/80 border border-white/10 text-gn-muted backdrop-blur-sm">
+                        DLC
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-gn-text text-xs font-semibold leading-tight line-clamp-2
+                                  group-hover:text-gn-primary transition-colors">
+                      {dlc.title}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Sección: Tu reseña ── */}
         <div className="mb-6">

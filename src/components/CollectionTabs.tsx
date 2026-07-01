@@ -131,23 +131,9 @@ function GameCard({ entry, statusKey }: { entry: CollectionEntry; statusKey: key
           {status.icon}
           {status.label}
         </div>
-
-        {/* Badge de rating — esquina superior derecha, igual que en el catálogo */}
-        {ratingMeta && game.userReview && (
-          <div
-            className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1
-                       rounded-md border text-xs font-bold backdrop-blur-sm bg-gn-bg/80"
-            style={{ borderColor: `${ratingMeta.color}40`, color: ratingMeta.color }}
-          >
-            <RatingIcon iconName={ratingMeta.iconName} size={14} />
-            <span style={{ fontFamily: 'Orbitron, monospace' }}>
-              {game.userReview.rating}
-            </span>
-          </div>
-        )}
       </div>
 
-      <div className="p-4 flex flex-col flex-1">
+      <div className="p-3 sm:p-4 flex flex-col flex-1">
         <h3 className="font-display font-bold text-sm text-gn-text truncate
                        group-hover:text-gn-primary transition-colors mb-1.5">
           {game.title}
@@ -167,26 +153,40 @@ function GameCard({ entry, statusKey }: { entry: CollectionEntry; statusKey: key
           </div>
         )}
 
-        <div className="mt-auto pt-3 border-t border-white/[0.06] flex items-center justify-between">
-          <span className="text-xs text-gn-muted">
-            {game._count.reviews} {game._count.reviews === 1 ? 'reseña' : 'reseñas'}
-          </span>
-
-          {game.userReview?.content ? (
-            <span className="flex items-center gap-1 text-[10px] font-semibold uppercase
-                             tracking-wide text-gn-primary/80">
-              ✍ Reseñado
-            </span>
-          ) : game.userReview ? (
-            <span className="text-[10px] text-gn-subtle uppercase tracking-wide">
-              Sin texto
-            </span>
-          ) : (
-            <span className="px-2 py-0.5 rounded bg-white/[0.04] text-[10px]
-                             text-gn-subtle uppercase tracking-wide">
-              Sin reseña
-            </span>
+        <div className="mt-auto pt-3 border-t border-white/[0.06] flex flex-col gap-2">
+          {/* Fila 1: rating badge (si tiene) */}
+          {ratingMeta && game.userReview && (
+            <div
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md border w-fit
+                         text-xs font-bold bg-gn-bg/80"
+              style={{ borderColor: `${ratingMeta.color}40`, color: ratingMeta.color }}
+            >
+              <RatingIcon iconName={ratingMeta.iconName} size={14} />
+              <span style={{ fontFamily: 'Orbitron, monospace' }}>
+                {game.userReview.rating}
+              </span>
+              <span className="text-[10px] font-semibold opacity-60">/10</span>
+            </div>
           )}
+
+          {/* Fila 2: reseñas totales + estado de reseña del usuario */}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-gn-muted">
+              {game._count.reviews} {game._count.reviews === 1 ? 'reseña' : 'reseñas'}
+            </span>
+
+            {game.userReview ? (
+              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase
+                               tracking-wide text-gn-primary/80">
+                ✍ Reseñado
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded bg-white/[0.04] text-[10px]
+                               text-gn-subtle uppercase tracking-wide">
+                Sin reseña
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Link>

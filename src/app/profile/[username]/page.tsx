@@ -14,6 +14,7 @@ import {
 import { RatingDistribution } from '@/components/RatingDistribution'
 import ProfileReviewsList from '@/components/ProfileReviewsList'
 import UserAvatarDisplay from '@/components/UserAvatarDisplay'
+import ShareProfileButton from '@/components/ShareProfileButton'
 import { getTopGenres, getReviewsThisYear } from '@/lib/profileStats'
 import { translateGenre, getGenreIconLucide, getGenreColor } from '@/lib/genres'
 
@@ -151,18 +152,24 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                   <p className="text-gn-muted text-sm mt-0.5">@{user.username}</p>
                 </div>
 
-                {isOwnProfile && (
-                  <Link
-                    href="/profile/edit"
-                    className="flex-shrink-0 flex items-center gap-1.5 bg-white/[0.04] border
-                               border-white/[0.08] hover:border-white/15 text-gn-muted
-                               hover:text-gn-text text-xs font-semibold uppercase
-                               tracking-wider px-3 py-2 rounded-lg transition-colors"
-                  >
-                    <SettingsIcon className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Editar perfil</span>
-                  </Link>
-                )}
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  <ShareProfileButton
+                    username={user.username!}
+                    displayName={user.name ?? 'Gamer'}
+                  />
+                  {isOwnProfile && (
+                    <Link
+                      href="/profile/edit"
+                      className="flex items-center gap-1.5 bg-white/[0.04] border
+                                 border-white/[0.08] hover:border-white/15 text-gn-muted
+                                 hover:text-gn-text text-xs font-semibold uppercase
+                                 tracking-wider px-3 py-2 rounded-lg transition-colors"
+                    >
+                      <SettingsIcon className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Editar perfil</span>
+                    </Link>
+                  )}
+                </div>
               </div>
 
               {user.bio && (

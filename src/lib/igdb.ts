@@ -86,7 +86,12 @@ export interface IGDBGame {
   rating_count?: number
 }
 
-// Buscar juegos por nombre
+// ── Búsqueda — más recientes primero ──
+// Pedimos más a IGDB y reordenamos en JS (el endpoint `search` ignora `sort`).
+// DLCs y expansiones aparecen como juegos normales — se pueden dar de alta y reseñar.
+const IGDB_SEARCH_FETCH = 20
+const IGDB_SEARCH_RETURN = 8
+
 export async function searchIGDBGames(query: string): Promise<IGDBGame[]> {
   const data = await igdbFetch(
     'games',
@@ -95,15 +100,49 @@ export async function searchIGDBGames(query: string): Promise<IGDBGame[]> {
       fields name, slug, summary, cover.url, first_release_date,
              genres.name, platforms.name, rating, rating_count;
       where version_parent = null & cover != null;
-      limit 8;
+      limit ${IGDB_SEARCH_FETCH};
     `
   )
-  return (data as IGDBGame[]).map(game => ({
-    ...game,
-    cover: game.cover
-      ? { ...game.cover, url: normalizeImageUrl(game.cover.url, 't_cover_big') }
-      : undefined,
-  }))
+
+  const games = (data as IGDBGame[])
+    .map(game => ({
+      ...game,
+      cover: game.cover
+        ? { ...game.cover, url: normalizeImageUrl(game.cover.url, 't_cover_big') }
+        : undefined,
+    }))
+    // Más recientes primero — juegos sin fecha van al final
+    .sort((a, b) => (b.first_release_date ?? 0) - (a.first_release_date ?? 0))
+    .slice(0, IGDB_SEARCH_RETURN)
+
+  return games
+}
+
+// ── IDs de DLCs/expansiones de un juego base (desde IGDB) ──
+// Consulta los campos `dlcs` y `expansions` del juego padre, que devuelven
+// arrays de IGDB IDs. Luego en page.tsx cruzamos con nuestra BD para ver
+// cuáles están dados de alta en el catálogo.
+export async function getIGDBRelatedDLCIds(igdbId: number): Promise<number[]> {
+  try {
+    const data = await igdbFetch(
+      'games',
+      `
+        fields dlcs, expansions;
+        where id = ${igdbId};
+        limit 1;
+      `
+    )
+
+    const game = (data as any[])[0]
+    if (!game) return []
+
+    const dlcIds:       number[] = game.dlcs ?? []
+    const expansionIds: number[] = game.expansions ?? []
+
+    return [...dlcIds, ...expansionIds]
+  } catch {
+    return []
+  }
 }
 
 export async function getIGDBGameDetails(igdbId: number): Promise<IGDBGame | null> {
