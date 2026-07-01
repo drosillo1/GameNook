@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getIGDBGameDetails, mapIGDBToDBFields } from '@/lib/igdb'
 
 function generateSlug(title: string): string {
   return title
@@ -120,9 +121,18 @@ export async function POST(request: NextRequest) {
 
     const slug = await ensureUniqueSlug(generateSlug(title.trim()))
 
-    // Ya no existe el estado PENDING por descripción modificada — la descripción
-    // viene siempre tal cual de IGDB/traducción, sin edición de usuario. Todo
-    // juego enviado se aprueba directamente.
+    // Traer datos enriquecidos de IGDB (themes, multiplayer, websites, etc.)
+    let enrichedFields = {}
+    try {
+      const igdbDetails = await getIGDBGameDetails(igdbId)
+      if (igdbDetails) {
+        enrichedFields = mapIGDBToDBFields(igdbDetails)
+      }
+    } catch (error) {
+      // Si falla la consulta enriquecida, seguimos sin esos datos — no bloquea la creación
+      console.error('Error fetching enriched IGDB data:', error)
+    }
+
     const game = await prisma.game.create({
       data: {
         title:               title.trim(),
@@ -137,6 +147,7 @@ export async function POST(request: NextRequest) {
         submittedBy:         userId,
         igdbRating:          igdbRating      ?? null,
         igdbRatingCount:     igdbRatingCount ?? null,
+        ...enrichedFields,
       },
       include: {
         reviews: { select: { rating: true } },

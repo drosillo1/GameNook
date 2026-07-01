@@ -13,7 +13,7 @@ import { getRatingData, getRatingBarColor } from '@/lib/rating'
 import IGDBGameDetails from '@/components/IGDBGameDetails'
 import ReviewList from '@/components/ReviewList'
 import GameDescription from '@/components/GameDescription'
-import { getIGDBRelatedDLCIds } from '@/lib/igdb'
+import { translateTheme } from '@/lib/themes'
 
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
@@ -28,6 +28,16 @@ const getGameCached = (slug: string) => unstable_cache(
         id: true, title: true, slug: true, description: true, 
         imageUrl: true, releaseDate: true, genre: true, 
         platform: true, igdbId: true,
+        // Datos enriquecidos
+        themes: true,
+        playerPerspectives: true,
+        multiplayerInfo: true,
+        ageRatings: true,
+        languageSupports: true,
+        gameEngine: true,
+        websites: true,
+        youtubeVideoIds: true,
+        dlcIgdbIds: true,
       },
     })
   },
@@ -70,18 +80,14 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   if (!game) notFound()
 
-  // ── DLCs/expansiones: pedimos IDs a IGDB → cruzamos con nuestra BD ──
-  // Solo muestra DLCs que estén dados de alta en el catálogo, como links a sus fichas.
+  // ── DLCs/expansiones: leemos IDs de BD → cruzamos con catálogo ──
   let dlcGames: { title: string; slug: string; imageUrl: string | null }[] = []
-  if (game.igdbId) {
-    const dlcIgdbIds = await getIGDBRelatedDLCIds(game.igdbId)
-    if (dlcIgdbIds.length > 0) {
-      dlcGames = await prisma.game.findMany({
-        where: { igdbId: { in: dlcIgdbIds }, status: 'APPROVED' },
-        select: { title: true, slug: true, imageUrl: true },
-        orderBy: { releaseDate: 'desc' },
-      })
-    }
+  if (game.dlcIgdbIds && game.dlcIgdbIds.length > 0) {
+    dlcGames = await prisma.game.findMany({
+      where: { igdbId: { in: game.dlcIgdbIds }, status: 'APPROVED' },
+      select: { title: true, slug: true, imageUrl: true },
+      orderBy: { releaseDate: 'desc' },
+    })
   }
 
   const stats = calcStats(reviews)
@@ -104,7 +110,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
       username:    r.user.username,
       displayName: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario',
       image:       r.user.image,
-       avatar:      r.user.avatar,
+      avatar:      r.user.avatar,
     },
   }))
 
@@ -121,6 +127,17 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   const featuredIds = new Set(featuredReviews.map(r => r.id))
   const remainingReviews = reviewsWithUsernames.filter(r => !featuredIds.has(r.id))
+
+  // ── Datos enriquecidos para IGDBGameDetails ──
+  const enrichedData = {
+    playerPerspectives: game.playerPerspectives ?? [],
+    multiplayerInfo:    game.multiplayerInfo as any[] | null,
+    ageRatings:         game.ageRatings as any[] | null,
+    languageSupports:   game.languageSupports as any[] | null,
+    gameEngine:         game.gameEngine ?? null,
+    youtubeVideoIds:    game.youtubeVideoIds ?? [],
+    websites:           game.websites as any[] | null,
+  }
 
   return (
     <div className="min-h-screen bg-gn-bg font-body">
@@ -167,6 +184,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               )}
             </div>
 
+            {/* Géneros */}
             <div className="flex flex-wrap gap-2">
               {game.genre.map((g: string) => (
                 <span key={g} className="px-2.5 py-1 bg-gn-primary/8 border border-gn-primary/20 text-red-300 text-xs font-semibold uppercase tracking-wide rounded">
@@ -174,6 +192,17 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 </span>
               ))}
             </div>
+
+            {/* Themes — estilo diferenciado: solo borde, sin fondo */}
+            {game.themes && game.themes.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {game.themes.map((theme: string) => (
+                  <span key={theme} className="px-2.5 py-1 border border-gn-muted/30 text-gn-muted text-xs font-semibold uppercase tracking-wide rounded hover:border-gn-muted/50 transition-colors">
+                    {translateTheme(theme)}
+                  </span>
+                ))}
+              </div>
+            )}
 
             <div>
               <CollectionButton gameId={game.id} />
@@ -303,7 +332,13 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           />
         </div>
 
-        {game.igdbId && <IGDBGameDetails igdbId={game.igdbId} gameSlug={game.slug} />}
+        {game.igdbId && (
+          <IGDBGameDetails
+            igdbId={game.igdbId}
+            gameSlug={game.slug}
+            enrichedData={enrichedData}
+          />
+        )}
       </div>
     </div>
   )
