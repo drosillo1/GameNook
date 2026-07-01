@@ -141,7 +141,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                     </h1>
                     {(user.role === 'ADMIN' || user.role === 'MODERATOR') && (
                       <span className={`px-2.5 py-1 rounded-lg border text-xs font-bold uppercase
-                               tracking-widest flex-shrink-0 ${user.role === 'ADMIN'
+                       tracking-widest flex-shrink-0 ${user.role === 'ADMIN'
                           ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
                           : 'bg-blue-500/10   border-blue-500/30   text-blue-400'
                         }`}>
@@ -152,7 +152,8 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                   <p className="text-gn-muted text-sm mt-0.5">@{user.username}</p>
                 </div>
 
-                <div className="flex-shrink-0 flex items-center gap-2">
+                {/* Botones: solo visibles en desktop */}
+                <div className="hidden sm:flex flex-shrink-0 items-center gap-2">
                   <ShareProfileButton
                     username={user.username!}
                     displayName={user.name ?? 'Gamer'}
@@ -161,12 +162,12 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                     <Link
                       href="/profile/edit"
                       className="flex items-center gap-1.5 bg-white/[0.04] border
-                                 border-white/[0.08] hover:border-white/15 text-gn-muted
-                                 hover:text-gn-text text-xs font-semibold uppercase
-                                 tracking-wider px-3 py-2 rounded-lg transition-colors"
+                         border-white/[0.08] hover:border-white/15 text-gn-muted
+                         hover:text-gn-text text-xs font-semibold uppercase
+                         tracking-wider px-3 py-2 rounded-lg transition-colors"
                     >
                       <SettingsIcon className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Editar perfil</span>
+                      <span>Editar perfil</span>
                     </Link>
                   )}
                 </div>
@@ -198,7 +199,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                     <span
                       key={platform}
                       className="px-2 py-1 bg-white/[0.04] border border-white/[0.08]
-                                 rounded-md text-gn-muted text-[11px] font-semibold"
+                         rounded-md text-gn-muted text-[11px] font-semibold"
                     >
                       {platform}
                     </span>
@@ -206,6 +207,26 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Botones: solo visibles en mobile, fila propia debajo */}
+          <div className="flex sm:hidden items-center gap-2 mt-4">
+            <ShareProfileButton
+              username={user.username!}
+              displayName={user.name ?? 'Gamer'}
+            />
+            {isOwnProfile && (
+              <Link
+                href="/profile/edit"
+                className="flex items-center gap-1.5 bg-white/[0.04] border
+                   border-white/[0.08] hover:border-white/15 text-gn-muted
+                   hover:text-gn-text text-xs font-semibold uppercase
+                   tracking-wider px-3 py-2 rounded-lg transition-colors"
+              >
+                <SettingsIcon className="w-3.5 h-3.5" />
+                Editar perfil
+              </Link>
+            )}
           </div>
         </div>
 
