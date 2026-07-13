@@ -14,6 +14,7 @@ import IGDBGameDetails from '@/components/IGDBGameDetails'
 import ReviewList from '@/components/ReviewList'
 import GameDescription from '@/components/GameDescription'
 import { translateTheme } from '@/lib/themes'
+import { translateGenre } from '@/lib/genres'
 
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
@@ -188,7 +189,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             <div className="flex flex-wrap gap-2">
               {game.genre.map((g: string) => (
                 <span key={g} className="px-2.5 py-1 bg-gn-primary/8 border border-gn-primary/20 text-red-300 text-xs font-semibold uppercase tracking-wide rounded">
-                  {g}
+                  {translateGenre(g)}
                 </span>
               ))}
             </div>

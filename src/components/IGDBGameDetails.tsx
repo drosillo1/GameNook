@@ -464,6 +464,39 @@ export default function IGDBGameDetails({ igdbId, gameSlug, enrichedData }: Prop
                       </div>
                     </div>
                   )}
+
+                  {/* Dónde comprarlo */}
+                  {storeWebsites.length > 0 && (
+                    <div className="sm:col-span-2">
+                      <p className="text-gn-muted text-xs font-semibold uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        Dónde comprarlo
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {storeWebsites.map((w, i) => {
+                          const store = STORE_CATEGORIES[w.category]
+                          if (!store) return null
+                          return (
+                            <a
+                              key={i}
+                              href={w.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-3 py-1.5
+                                         bg-gn-surface border border-white/[0.06] rounded-lg
+                                         text-gn-text text-xs font-semibold
+                                         hover:border-gn-primary/30 hover:bg-gn-primary/5
+                                         transition-all duration-200 group"
+                            >
+                              <span>{store.icon}</span>
+                              {store.label}
+                              <ExternalLink className="w-3 h-3 text-gn-muted group-hover:text-gn-primary transition-colors" />
+                            </a>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -553,40 +586,6 @@ export default function IGDBGameDetails({ igdbId, gameSlug, enrichedData }: Prop
         </div>
       )}
 
-      {/* ── Dónde comprarlo ── */}
-      {storeWebsites.length > 0 && (
-        <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6">
-          <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-4">
-            <span className="inline-flex items-center gap-1.5">
-              <ShoppingCart className="w-3.5 h-3.5" />
-              // Dónde comprarlo
-            </span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {storeWebsites.map((w, i) => {
-              const store = STORE_CATEGORIES[w.category]
-              if (!store) return null
-              return (
-                <a
-                  key={i}
-                  href={w.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5
-                             bg-gn-surface border border-white/[0.06] rounded-lg
-                             text-gn-text text-sm font-semibold
-                             hover:border-gn-primary/30 hover:bg-gn-primary/5
-                             transition-all duration-200 group"
-                >
-                  <span className="text-base">{store.icon}</span>
-                  {store.label}
-                  <ExternalLink className="w-3.5 h-3.5 text-gn-muted group-hover:text-gn-primary transition-colors" />
-                </a>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
