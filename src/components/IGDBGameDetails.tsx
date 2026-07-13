@@ -64,18 +64,21 @@ const ESRB_LABELS: Record<number, string> = {
 }
 
 const STORE_CATEGORIES: Record<number, { label: string; icon: string }> = {
-  1:  { label: 'Web oficial',  icon: '🌐' },
-  13: { label: 'Steam',        icon: '🎮' },
-  16: { label: 'Epic Games',   icon: '🎯' },
-  17: { label: 'GOG',          icon: '🦅' },
-  15: { label: 'Itch.io',      icon: '🕹️' },
-  10: { label: 'App Store',    icon: '🍎' },
-  11: { label: 'iPad',         icon: '📱' },
-  12: { label: 'Google Play',  icon: '🤖' },
+  1:   { label: 'Web oficial',       icon: '🌐' },
+  13:  { label: 'Steam',             icon: '🎮' },
+  16:  { label: 'Epic Games',        icon: '🎯' },
+  17:  { label: 'GOG',               icon: '🦅' },
+  15:  { label: 'Itch.io',           icon: '🕹️' },
+  10:  { label: 'App Store',         icon: '🍎' },
+  11:  { label: 'iPad',              icon: '📱' },
+  12:  { label: 'Google Play',       icon: '🤖' },
+  100: { label: 'PlayStation Store', icon: '🔵' },
+  101: { label: 'Xbox',              icon: '🟢' },
+  102: { label: 'Nintendo',          icon: '🔴' },
 }
 
-// Solo mostramos las tiendas/web oficial, no redes sociales
-const STORE_CATEGORY_IDS = new Set([1, 10, 11, 12, 13, 15, 16, 17])
+// Solo mostramos las tiendas, no redes sociales
+const STORE_CATEGORY_IDS = new Set([1, 10, 11, 12, 13, 15, 16, 17, 100, 101, 102])
 
 const GAME_MODE_MAP: Record<string, { label: string; icon: React.ReactNode }> = {
   'Single player':                      { label: 'Un jugador',        icon: <UserIcon    className="w-3.5 h-3.5" /> },

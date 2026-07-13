@@ -308,6 +308,30 @@ export async function getIGDBGameById(id: number): Promise<IGDBGame | null> {
   return getIGDBGameDetails(id)
 }
 
+// ── Helper: inferir categoría de website desde la URL ──.
+// Categorías 100+ son custom de GameNook (PS Store, Xbox, Nintendo) — IGDB no las tiene.
+export function inferWebsiteCategory(url: string): number | null {
+  if (url.includes('store.steampowered.com') || url.includes('steamcommunity.com')) return 13
+  if (url.includes('epicgames.com'))          return 16
+  if (url.includes('gog.com'))                return 17
+  if (url.includes('itch.io'))                return 15
+  if (url.includes('play.google.com'))        return 12
+  if (url.includes('apps.apple.com') || url.includes('itunes.apple.com')) return 10
+  if (url.includes('store.playstation.com') || url.includes('playstation.com')) return 100
+  if (url.includes('xbox.com'))               return 101
+  if (url.includes('nintendo.com'))           return 102
+  if (url.includes('twitter.com') || url.includes('x.com')) return 5
+  if (url.includes('facebook.com'))           return 4
+  if (url.includes('instagram.com'))          return 8
+  if (url.includes('twitch.tv'))              return 6
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 9
+  if (url.includes('reddit.com'))             return 14
+  if (url.includes('discord.gg') || url.includes('discord.com')) return 18
+  if (url.includes('wikipedia.org'))          return 3
+  if (url.includes('fandom.com') || url.includes('wikia.com')) return 2
+  return null
+}
+
 // ── Helper: extraer datos para guardar en BD ──
 // Transforma la respuesta de IGDB al formato que espera Prisma
 export function mapIGDBToDBFields(game: IGDBGame) {
@@ -342,10 +366,12 @@ export function mapIGDBToDBFields(game: IGDBGame) {
       : undefined,
     gameEngine:         game.game_engines?.[0]?.name ?? null,
     websites:           game.websites && game.websites.length > 0
-      ? game.websites.map(w => ({
-          category: w.category,
-          url:      w.url,
-        }))
+      ? game.websites
+          .map(w => ({
+            category: w.category ?? inferWebsiteCategory(w.url),
+            url:      w.url,
+          }))
+          .filter(w => w.category !== null) as { category: number; url: string }[]
       : undefined,
     youtubeVideoIds:    (game.videos ?? []).map(v => v.video_id),
     dlcIgdbIds:         [...(game.dlcs ?? []), ...(game.expansions ?? [])],
