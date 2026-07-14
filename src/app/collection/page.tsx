@@ -1,3 +1,4 @@
+// src/app/collection/page.tsx
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -49,10 +50,11 @@ export default async function CollectionPage({
     COMPLETED:    entries.filter(e => e.status === 'COMPLETED'),
     WANT_TO_PLAY: entries.filter(e => e.status === 'WANT_TO_PLAY'),
     DROPPED:      entries.filter(e => e.status === 'DROPPED'),
+    WISHLIST:     entries.filter(e => e.status === 'WISHLIST'),
   }
 
   const { tab } = await searchParams
-  const validTabs = ['PLAYING', 'COMPLETED', 'WANT_TO_PLAY', 'DROPPED']
+  const validTabs = ['PLAYING', 'COMPLETED', 'WANT_TO_PLAY', 'DROPPED', 'WISHLIST']
   const initialTab = validTabs.includes(tab ?? '')
     ? (tab as keyof typeof grouped)
     : 'PLAYING'

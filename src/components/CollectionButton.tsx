@@ -4,9 +4,9 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { BookmarkIcon, CheckIcon, PlayIcon, XIcon, ClockIcon, ChevronDownIcon } from 'lucide-react'
+import { BookmarkIcon, CheckIcon, PlayIcon, XIcon, ClockIcon, ChevronDownIcon, EyeIcon } from 'lucide-react'
 
-type CollectionStatus = 'WANT_TO_PLAY' | 'PLAYING' | 'COMPLETED' | 'DROPPED'
+type CollectionStatus = 'WANT_TO_PLAY' | 'PLAYING' | 'COMPLETED' | 'DROPPED' | 'WISHLIST'
 
 const STATUS_CONFIG: Record<CollectionStatus, {
   label: string
@@ -43,7 +43,17 @@ const STATUS_CONFIG: Record<CollectionStatus, {
     bg:     'bg-red-500/10',
     border: 'border-red-500/30',
   },
+  WISHLIST: {
+    label:  'Siguiendo',
+    icon:   <EyeIcon className="w-3.5 h-3.5" />,
+    color:  'text-yellow-400',
+    bg:     'bg-yellow-500/10',
+    border: 'border-yellow-500/30',
+  },
 }
+
+// Los estados de "juego" van primero, WISHLIST al final separado
+const PLAY_STATUSES: CollectionStatus[] = ['WANT_TO_PLAY', 'PLAYING', 'COMPLETED', 'DROPPED']
 
 export default function CollectionButton({ gameId }: { gameId: string }) {
   const { data: session } = useSession()
@@ -124,28 +134,55 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
           <div className="absolute left-0 top-full mt-2 w-52 bg-gn-card border
                           border-white/[0.08] rounded-xl overflow-hidden shadow-xl z-20">
 
+            {/* Estados de juego */}
             <div className="p-1.5">
-              {(Object.entries(STATUS_CONFIG) as [CollectionStatus, typeof STATUS_CONFIG[CollectionStatus]][]).map(([status, cfg]) => (
-                <button
-                  key={status}
-                  onClick={() => handleSelect(status)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg
-                              text-xs font-semibold uppercase tracking-wide text-left
-                              transition-colors duration-150
-                              ${currentStatus === status
-                                ? `${cfg.bg} ${cfg.color}`
-                                : 'text-gn-muted hover:bg-white/[0.04] hover:text-gn-text'
-                              }`}
-                >
-                  <span className={currentStatus === status ? cfg.color : 'text-gn-subtle'}>
-                    {cfg.icon}
-                  </span>
-                  {cfg.label}
-                  {currentStatus === status && (
-                    <CheckIcon className="w-3 h-3 ml-auto" />
-                  )}
-                </button>
-              ))}
+              {PLAY_STATUSES.map(status => {
+                const cfg = STATUS_CONFIG[status]
+                return (
+                  <button
+                    key={status}
+                    onClick={() => handleSelect(status)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg
+                                text-xs font-semibold uppercase tracking-wide text-left
+                                transition-colors duration-150
+                                ${currentStatus === status
+                                  ? `${cfg.bg} ${cfg.color}`
+                                  : 'text-gn-muted hover:bg-white/[0.04] hover:text-gn-text'
+                                }`}
+                  >
+                    <span className={currentStatus === status ? cfg.color : 'text-gn-subtle'}>
+                      {cfg.icon}
+                    </span>
+                    {cfg.label}
+                    {currentStatus === status && (
+                      <CheckIcon className="w-3 h-3 ml-auto" />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Separador + Seguir */}
+            <div className="h-px bg-white/[0.06] mx-1" />
+            <div className="p-1.5">
+              <button
+                onClick={() => handleSelect('WISHLIST')}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg
+                            text-xs font-semibold uppercase tracking-wide text-left
+                            transition-colors duration-150
+                            ${currentStatus === 'WISHLIST'
+                              ? `${STATUS_CONFIG.WISHLIST.bg} ${STATUS_CONFIG.WISHLIST.color}`
+                              : 'text-gn-muted hover:bg-yellow-500/10 hover:text-yellow-400'
+                            }`}
+              >
+                <span className={currentStatus === 'WISHLIST' ? 'text-yellow-400' : 'text-gn-subtle'}>
+                  <EyeIcon className="w-3.5 h-3.5" />
+                </span>
+                Seguir
+                {currentStatus === 'WISHLIST' && (
+                  <CheckIcon className="w-3 h-3 ml-auto" />
+                )}
+              </button>
             </div>
 
             {currentStatus && (

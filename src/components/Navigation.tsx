@@ -1,4 +1,4 @@
-//Navigation.tsx
+// src/components/Navigation.tsx
 'use client'
 
 import Link from 'next/link'
@@ -35,10 +35,11 @@ export default function Navigation() {
   const profileHref = session?.user?.username ? `/profile/${session.user.username}` : '/profile'
 
   const navLinks = [
-    { href: '/games',      label: 'Juegos',   always: true  },
-    { href: '/collection', label: 'Colección', always: false },
-    { href: profileHref,   label: 'Perfil',   always: false, isProfile: true },
-    { href: '/games/add',  label: 'Agregar',  always: false },
+    { href: '/games',      label: 'Juegos',        always: true  },
+    { href: '/upcoming',   label: 'Próximamente',  always: true  },
+    { href: '/collection', label: 'Colección',     always: false },
+    { href: profileHref,   label: 'Perfil',        always: false, isProfile: true },
+    { href: '/games/add',  label: 'Agregar',       always: false },
   ]
 
   const visibleLinks = navLinks.filter(l => l.always || session)

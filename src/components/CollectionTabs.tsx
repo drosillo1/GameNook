@@ -1,8 +1,9 @@
+// src/components/CollectionTabs.tsx
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { PlayIcon, CheckIcon, ClockIcon, XIcon } from 'lucide-react'
+import { PlayIcon, CheckIcon, ClockIcon, XIcon, EyeIcon } from 'lucide-react'
 import { RatingIcon } from './RatingIcon'
 
 const PAGE_SIZE = 12
@@ -37,6 +38,7 @@ type Grouped = {
   COMPLETED:    CollectionEntry[]
   WANT_TO_PLAY: CollectionEntry[]
   DROPPED:      CollectionEntry[]
+  WISHLIST:     CollectionEntry[]
 }
 
 // Metadata centralizada por estado — la usan tanto los tabs como el badge
@@ -70,6 +72,13 @@ const STATUS_META = {
     border: 'border-red-500/30',
     text: 'text-red-400',
   },
+  WISHLIST: {
+    label: 'Siguiendo',
+    icon: <EyeIcon className="w-3.5 h-3.5" />,
+    bg: 'bg-yellow-500/10',
+    border: 'border-yellow-500/30',
+    text: 'text-yellow-400',
+  },
 } as const
 
 const TAB_PLURALS: Record<keyof Grouped, string> = {
@@ -77,6 +86,7 @@ const TAB_PLURALS: Record<keyof Grouped, string> = {
   COMPLETED: 'Completados',
   WANT_TO_PLAY: 'Pendientes',
   DROPPED: 'Abandonados',
+  WISHLIST: 'Seguidos',
 }
 
 const TABS = (Object.keys(STATUS_META) as (keyof Grouped)[]).map(key => ({
@@ -237,7 +247,7 @@ export default function CollectionTabs({ grouped, initialTab }: {
   return (
     <div>
       {/* Stat cards — son botones que cambian el tab activo sin recargar la página */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
         {TABS.map(tab => {
           const count    = grouped[tab.key].length
           const isActive = active === tab.key

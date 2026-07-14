@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'gameId y status son requeridos' }, { status: 400 })
     }
 
-    const validStatuses = ['WANT_TO_PLAY', 'PLAYING', 'COMPLETED', 'DROPPED']
+    const validStatuses = ['WANT_TO_PLAY', 'PLAYING', 'COMPLETED', 'DROPPED', 'WISHLIST']
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Estado inválido' }, { status: 400 })
     }

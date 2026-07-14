@@ -315,13 +315,14 @@ export default function IGDBGameDetails({ igdbId, gameSlug, enrichedData }: Prop
           {hasMoreDetails && (
             <div className="mt-5 pt-5 border-t border-white/[0.06]">
               <button
-                onClick={() => setShowMoreDetails(!showMoreDetails)}
+                type="button"
+                onClick={() => setShowMoreDetails(prev => !prev)}
                 className="flex items-center gap-2 text-gn-muted hover:text-gn-text
                            text-xs font-semibold uppercase tracking-widest transition-colors
-                           cursor-pointer w-full"
+                           cursor-pointer"
               >
                 {showMoreDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                Más detalles
+                {showMoreDetails ? 'Ocultar detalles' : 'Más detalles'}
               </button>
 
               {showMoreDetails && (
