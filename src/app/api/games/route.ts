@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
     })
 
     revalidatePath('/games')
+    revalidatePath('/upcoming')
 
     return NextResponse.json({ ...game, averageRating: null }, { status: 201 })
   } catch (error) {

@@ -34,6 +34,7 @@ export async function PATCH(
     // Invalida el listado /games (todas las combinaciones de filtros/orden/página
     // cacheadas bajo esa ruta) y el detalle individual del juego.
     revalidatePath('/games')
+    revalidatePath('/upcoming')
     revalidatePath('/admin')
     revalidateTag(`game-${game.slug}`)
 
@@ -61,6 +62,7 @@ export async function DELETE(
     const game = await prisma.game.delete({ where: { id } })
 
     revalidatePath('/games')
+    revalidatePath('/upcoming')
     revalidatePath('/admin')
     revalidateTag(`game-${game.slug}`)
 

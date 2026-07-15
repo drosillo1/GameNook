@@ -15,6 +15,7 @@ import ReviewList from '@/components/ReviewList'
 import GameDescription from '@/components/GameDescription'
 import { translateTheme } from '@/lib/themes'
 import { translateGenre } from '@/lib/genres'
+import FollowButton from '@/components/FollowButton'
 
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
@@ -206,7 +207,11 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             )}
 
             <div>
-              <CollectionButton gameId={game.id} />
+              {game.releaseDate && new Date(game.releaseDate) > new Date() ? (
+                <FollowButton gameId={game.id} />
+              ) : (
+                <CollectionButton gameId={game.id} />
+              )}
             </div>
 
             {game.description && (

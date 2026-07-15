@@ -46,6 +46,7 @@ export async function updateGameAction(gameId: string, slug: string, formData: u
   try {
     revalidateTag(`game-${slug}`)
     revalidatePath('/games')
+    revalidatePath('/upcoming')
     revalidatePath('/admin')
   } catch (err) {
     console.error('revalidate failed', err)
@@ -70,6 +71,7 @@ export async function createGameAction(formData: unknown) {
   try {
     revalidateTag(`game-${created.slug}`)
     revalidatePath('/games')
+    revalidatePath('/upcoming')
   } catch (err) {
     console.error('revalidate failed', err)
   }
