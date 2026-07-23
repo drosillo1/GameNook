@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { getIGDBGameDetails, mapIGDBToDBFields } from '@/lib/igdb'
 
 function generateSlug(title: string): string {
@@ -157,6 +157,7 @@ export async function POST(request: NextRequest) {
 
     revalidatePath('/games')
     revalidatePath('/upcoming')
+    revalidateTag('upcoming-games')
 
     return NextResponse.json({ ...game, averageRating: null }, { status: 201 })
   } catch (error) {

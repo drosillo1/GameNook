@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Calendar, Monitor, ChevronLeft, Clock, PlusIcon } from 'lucide-react'
+import { Calendar, Monitor, ChevronLeft, Clock, PlusIcon, HelpCircle } from 'lucide-react'
 import FollowButton from '@/components/FollowButton'
 import { translateGenre } from '@/lib/genres'
 import { formatMonthYear, getReleaseStatusLabel } from '@/lib/upcoming'
@@ -30,29 +30,41 @@ const getUpcomingGames = unstable_cache(
     const games = await prisma.game.findMany({
       where: {
         status: 'APPROVED',
-        releaseDate: { gt: now },
+        OR: [
+          // Juegos con fecha futura confirmada
+          { releaseDate: { gt: now } },
+          // Juegos sin fecha — anunciados pero sin ventana de lanzamiento
+          { releaseDate: null },
+        ],
       },
       select: {
-        id:          true,
-        title:       true,
-        slug:        true,
-        imageUrl:    true,
-        releaseDate: true,
-        genre:       true,
-        platform:    true,
+        id:            true,
+        title:         true,
+        slug:          true,
+        imageUrl:      true,
+        releaseDate:   true,
+        genre:         true,
+        platform:      true,
         releaseStatus: true,
-        description: true,
+        description:   true,
       },
-      orderBy: { releaseDate: 'asc' },
     })
 
-    return games.map(g => ({
+    // Ordenar: primero los que tienen fecha (ascendente), luego los sin fecha (alfabético)
+    const withDate    = games
+      .filter(g => g.releaseDate)
+      .sort((a, b) => new Date(a.releaseDate!).getTime() - new Date(b.releaseDate!).getTime())
+    const withoutDate = games
+      .filter(g => !g.releaseDate)
+      .sort((a, b) => a.title.localeCompare(b.title, 'es'))
+
+    return [...withDate, ...withoutDate].map(g => ({
       ...g,
       releaseDate: g.releaseDate?.toISOString() ?? null,
     }))
   },
   ['upcoming-games'],
-  { revalidate: 3600 }
+  { revalidate: 3600, tags: ['upcoming-games'] }
 )
 
 interface UpcomingGame {
@@ -126,12 +138,17 @@ function UpcomingGameCard({ game }: { game: UpcomingGame }) {
           </h3>
         </Link>
 
-        {game.releaseDate && (
+        {game.releaseDate ? (
           <span className="flex items-center gap-1.5 text-xs text-gn-muted">
             <Calendar className="w-3 h-3" />
             {new Date(game.releaseDate).toLocaleDateString('es-ES', {
               day: 'numeric', month: 'short', year: 'numeric',
             })}
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-xs text-gn-muted italic">
+            <HelpCircle className="w-3 h-3" />
+            Fecha por confirmar
           </span>
         )}
 
@@ -221,7 +238,10 @@ export default async function UpcomingPage() {
               {monthGroups.map(group => (
                 <section key={group.label}>
                   <div className="flex items-center gap-3 mb-5">
-                    <Clock className="w-4 h-4 text-yellow-400" />
+                    {group.label === 'Fecha por confirmar'
+                      ? <HelpCircle className="w-4 h-4 text-gn-muted" />
+                      : <Clock className="w-4 h-4 text-yellow-400" />
+                    }
                     <h2 className="font-display font-bold text-lg text-gn-text">
                       {group.label}
                     </h2>
