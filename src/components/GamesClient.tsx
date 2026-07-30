@@ -1,13 +1,12 @@
 ﻿// src/components/GamesClient.tsx
 'use client'
 
-import { useState, useTransition, useEffect, useRef, useMemo } from 'react'
+import { useState, useTransition, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import Image from 'next/image'
 import { XIcon } from 'lucide-react'
 import { translateGenre } from '@/lib/genres'
 import GameSearchDropdown from './GameSearchDropdown'
+import GameCard from './GameCard'
 
 import type { Game, FilterOptions, SortKey } from '@/types/games'
 
@@ -33,86 +32,6 @@ const RATING_META: Record<number, { icon: string; label: string; color: string }
   5:  { icon: '⚡', label: 'Recomendado+',   color: 'text-purple-400'  },
   7:  { icon: '🏆', label: 'Muy bueno',      color: 'text-orange-400'  },
   9:  { icon: '👑', label: 'Imprescindible', color: 'text-yellow-400'  },
-}
-
-function getRatingMeta(rating: number | null) {
-  if (!rating) return { icon: '🎮', color: '#6b7280' }
-  if (rating >= 9)  return { icon: '👑', color: '#fbbf24' }
-  if (rating >= 7)  return { icon: '🏆', color: '#f97316' }
-  if (rating >= 5)  return { icon: '⚡', color: '#a855f7' }
-  if (rating >= 3)  return { icon: '❤️', color: '#3b82f6' }
-  return                { icon: '🎮', color: '#6b7280' }
-}
-
-function GameCard({ game }: { game: Game }) {
-  const meta = getRatingMeta(game.averageRating)
-  return (
-    <Link
-      href={`/games/${game.slug}`}
-      className="group bg-gn-card border border-white/[0.06] rounded-xl
-                 overflow-hidden hover:border-gn-primary/30 hover:-translate-y-1
-                 transition-all duration-200 flex flex-col"
-    >
-      <div className="aspect-[3/4] bg-gn-surface relative overflow-hidden">
-        {game.imageUrl ? (
-          <Image
-            src={game.imageUrl}
-            alt={game.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-gn-muted">
-            <span className="text-3xl">🎮</span>
-          </div>
-        )}
-        <div
-          className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1
-                     rounded-md border text-xs font-bold backdrop-blur-sm bg-gn-bg/80"
-          style={{ borderColor: `${meta.color}40`, color: meta.color }}
-        >
-          {game.averageRating ? (
-            <>
-              <span>{meta.icon}</span>
-              <span style={{ fontFamily: 'Orbitron, monospace' }}>
-                {game.averageRating.toFixed(1)}
-              </span>
-            </>
-          ) : (
-            <span className="text-gn-subtle">—</span>
-          )}
-        </div>
-      </div>
-      <div className="p-3 flex flex-col flex-1">
-        <h3
-          className="font-display font-bold text-xs tracking-wide text-gn-text
-                     group-hover:text-gn-primary transition-colors truncate mb-1"
-          style={{ fontFamily: 'Orbitron, monospace' }}
-        >
-          {game.title}
-        </h3>
-        <div className="flex flex-wrap gap-1 mb-2">
-          {game.genre.slice(0, 2).map(g => (
-            <span
-              key={g}
-              className="px-1.5 py-0.5 bg-gn-primary/8 border border-gn-primary/15
-                         text-red-300 text-[10px] font-semibold uppercase tracking-wide rounded"
-            >
-              {translateGenre(g)}
-            </span>
-          ))}
-        </div>
-        <div className="mt-auto pt-2 border-t border-white/[0.04]">
-          <span className="text-[10px] text-gn-muted">
-            {game._count.reviews}{' '}
-            {game._count.reviews === 1 ? 'reseña' : 'reseñas'}
-          </span>
-        </div>
-      </div>
-    </Link>
-  )
 }
 
 interface SidebarProps {
