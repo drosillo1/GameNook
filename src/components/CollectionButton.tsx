@@ -17,35 +17,35 @@ const STATUS_CONFIG: Record<CollectionStatus, {
 }> = {
   WANT_TO_PLAY: {
     label:  'Pendiente',
-    icon:   <ClockIcon className="w-3.5 h-3.5" />,
+    icon:   <ClockIcon className="w-4 h-4" />,
     color:  'text-blue-400',
     bg:     'bg-blue-500/10',
     border: 'border-blue-500/30',
   },
   PLAYING: {
     label:  'Jugando',
-    icon:   <PlayIcon className="w-3.5 h-3.5" />,
+    icon:   <PlayIcon className="w-4 h-4" />,
     color:  'text-green-400',
     bg:     'bg-green-500/10',
     border: 'border-green-500/30',
   },
   COMPLETED: {
     label:  'Completado',
-    icon:   <CheckIcon className="w-3.5 h-3.5" />,
+    icon:   <CheckIcon className="w-4 h-4" />,
     color:  'text-purple-400',
     bg:     'bg-purple-500/10',
     border: 'border-purple-500/30',
   },
   DROPPED: {
     label:  'Abandonado',
-    icon:   <XIcon className="w-3.5 h-3.5" />,
+    icon:   <XIcon className="w-4 h-4" />,
     color:  'text-red-400',
     bg:     'bg-red-500/10',
     border: 'border-red-500/30',
   },
   WISHLIST: {
     label:  'Siguiendo',
-    icon:   <EyeIcon className="w-3.5 h-3.5" />,
+    icon:   <EyeIcon className="w-4 h-4" />,
     color:  'text-yellow-400',
     bg:     'bg-yellow-500/10',
     border: 'border-yellow-500/30',
@@ -104,35 +104,42 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
 
   const active = currentStatus ? STATUS_CONFIG[currentStatus] : null
 
+
+  const triggerStyle = loading
+    ? 'bg-white/[0.04] border-white/[0.08] text-gn-muted'
+    : active
+      ? `${active.bg} ${active.border} ${active.color}`
+      : 'bg-gn-primary border-transparent text-white hover:bg-gn-primary-dark shadow-[0_4px_20px_-4px_rgba(230,57,70,0.5)]'
+
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         disabled={loading || saving}
-        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border font-bold
+        className={`w-full sm:w-auto min-h-[44px] flex items-center justify-center sm:justify-start
+                    gap-2 px-5 py-3 rounded-lg border font-bold
                     text-xs uppercase tracking-wider transition-all duration-200
                     disabled:opacity-40 disabled:cursor-not-allowed
-                    ${active
-                      ? `${active.bg} ${active.border} ${active.color}`
-                      : 'bg-white/[0.04] border-white/[0.08] text-gn-muted hover:border-white/20 hover:text-gn-text'
-                    }`}
+                    ${triggerStyle}`}
       >
         {saving ? (
-          <div className="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+          <div className="w-4 h-4 border border-current border-t-transparent rounded-full animate-spin" />
         ) : active ? (
           active.icon
         ) : (
-          <BookmarkIcon className="w-3.5 h-3.5" />
+          <BookmarkIcon className="w-4 h-4" />
         )}
         {loading ? 'Cargando...' : active ? active.label : 'Añadir a colección'}
-        <ChevronDownIcon className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDownIcon className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-2 w-52 bg-gn-card border
-                          border-white/[0.08] rounded-xl overflow-hidden shadow-xl z-20">
+          <div className="absolute left-0 right-0 sm:right-auto top-full mt-2 sm:w-52
+                          bg-gn-card border border-white/[0.08] rounded-xl
+                          overflow-hidden shadow-xl z-20">
 
             {/* Estados de juego */}
             <div className="p-1.5">
@@ -141,8 +148,9 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
                 return (
                   <button
                     key={status}
+                    type="button"
                     onClick={() => handleSelect(status)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg
                                 text-xs font-semibold uppercase tracking-wide text-left
                                 transition-colors duration-150
                                 ${currentStatus === status
@@ -166,8 +174,9 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
             <div className="h-px bg-white/[0.06] mx-1" />
             <div className="p-1.5">
               <button
+                type="button"
                 onClick={() => handleSelect('WISHLIST')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg
                             text-xs font-semibold uppercase tracking-wide text-left
                             transition-colors duration-150
                             ${currentStatus === 'WISHLIST'
@@ -176,7 +185,7 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
                             }`}
               >
                 <span className={currentStatus === 'WISHLIST' ? 'text-yellow-400' : 'text-gn-subtle'}>
-                  <EyeIcon className="w-3.5 h-3.5" />
+                  <EyeIcon className="w-4 h-4" />
                 </span>
                 Seguir
                 {currentStatus === 'WISHLIST' && (
@@ -190,13 +199,14 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
                 <div className="h-px bg-white/[0.06] mx-1" />
                 <div className="p-1.5">
                   <button
+                    type="button"
                     onClick={handleRemove}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg
                                text-xs font-semibold uppercase tracking-wide text-left
                                text-gn-muted hover:bg-red-500/10 hover:text-red-400
                                transition-colors duration-150"
                   >
-                    <XIcon className="w-3.5 h-3.5" />
+                    <XIcon className="w-4 h-4" />
                     Eliminar de colección
                   </button>
                 </div>

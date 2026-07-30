@@ -1,3 +1,4 @@
+/* src/app/globals.css */
 @import "tailwindcss";
 @plugin "@midudev/tailwind-animations";
 
@@ -36,11 +37,26 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Evita que iOS Safari infle el texto al girar el móvil a horizontal */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--gn-bg);
   color: var(--gn-text);
   font-family: var(--font-geist-sans), Arial, sans-serif;
 }
+
+/* ── Fix de auto-zoom en iOS Safari   */
+@media screen and (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* ── Character animations ── */
 @keyframes warrior-float {
   0%, 100% { transform: translateY(0)    rotate(-1deg); }

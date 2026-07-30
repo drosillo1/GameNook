@@ -94,6 +94,8 @@ const TABS = (Object.keys(STATUS_META) as (keyof Grouped)[]).map(key => ({
   ...STATUS_META[key],
 }))
 
+const PLAY_TABS = TABS.filter(t => t.key !== 'WISHLIST')
+
 function getRatingMeta(rating: number) {
   if (rating === 10) return { iconName: 'Crown' as const,  color: '#fbbf24' }
   if (rating === 9)  return { iconName: 'Trophy' as const, color: '#f97316' }
@@ -244,37 +246,72 @@ export default function CollectionTabs({ grouped, initialTab }: {
     setPage(1)
   }
 
+  const wishlistCount    = grouped.WISHLIST.length
+  const wishlistActive   = active === 'WISHLIST'
+  const wishlistMeta     = STATUS_META.WISHLIST
+
   return (
     <div>
       {/* Stat cards — son botones que cambian el tab activo sin recargar la página */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
-        {TABS.map(tab => {
-          const count    = grouped[tab.key].length
-          const isActive = active === tab.key
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActive(tab.key)}
-              className={`${tab.bg} border rounded-xl p-4 text-left transition-all
-                         ${isActive ? `${tab.border} ring-1 ring-inset ${tab.border}` : 'border-white/[0.06] hover:brightness-125'}`}
-            >
-              <div className={`font-display font-black text-3xl ${tab.text}`}>{count}</div>
-              <div className="text-gn-muted text-xs uppercase tracking-widest mt-1">
-                {TAB_PLURALS[tab.key]}
-              </div>
-            </button>
-          )
-        })}
+      <div className="mb-8">
+
+        {/* Los 4 estados de juego */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {PLAY_TABS.map(tab => {
+            const count    = grouped[tab.key].length
+            const isActive = active === tab.key
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActive(tab.key)}
+                className={`${tab.bg} border rounded-xl p-4 text-left transition-all
+                           ${isActive ? `${tab.border} ring-1 ring-inset ${tab.border}` : 'border-white/[0.06] hover:brightness-125'}`}
+              >
+                <div className={`font-display font-black text-3xl ${tab.text}`}>{count}</div>
+                <div className="text-gn-muted text-xs uppercase tracking-widest mt-1">
+                  {TAB_PLURALS[tab.key]}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Seguidos — separado y más compacto: no es un estado de juego */}
+        <div className="mt-3 pt-3 border-t border-white/[0.06]">
+          <button
+            type="button"
+            onClick={() => setActive('WISHLIST')}
+            className={`${wishlistMeta.bg} w-full flex items-center gap-3 px-4 py-3
+                        rounded-xl border text-left transition-all
+                        ${wishlistActive
+                          ? `${wishlistMeta.border} ring-1 ring-inset ${wishlistMeta.border}`
+                          : 'border-white/[0.06] hover:brightness-125'}`}
+          >
+            <EyeIcon className={`w-4 h-4 flex-shrink-0 ${wishlistMeta.text}`} />
+            <span className={`font-display font-black text-2xl leading-none ${wishlistMeta.text}`}>
+              {wishlistCount}
+            </span>
+            <span className="text-gn-muted text-xs uppercase tracking-widest">
+              {TAB_PLURALS.WISHLIST}
+            </span>
+            <span className="ml-auto hidden sm:block text-[10px] text-gn-subtle
+                             uppercase tracking-widest">
+              Juegos que sigues
+            </span>
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] mb-6">
-        <div className="flex gap-0 overflow-x-auto">
+        <div className="flex gap-0 overflow-x-auto min-w-0 max-w-full">
           {TABS.map(tab => {
             const count    = grouped[tab.key].length
             const isActive = active === tab.key
             return (
               <button
                 key={tab.key}
+                type="button"
                 onClick={() => setActive(tab.key)}
                 className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase
                             tracking-wider border-b-2 transition-all duration-150 whitespace-nowrap
@@ -298,6 +335,8 @@ export default function CollectionTabs({ grouped, initialTab }: {
           <span className="text-gn-muted text-xs uppercase tracking-widest font-semibold">
             Ordenar:
           </span>
+          {/* Nota: en móvil globals.css fuerza font-size 16px en selects para
+              evitar el auto-zoom de Safari iOS. El text-xs solo aplica ≥768px. */}
           <select
             value={sort}
             onChange={e => handleSortChange(e.target.value as SortOption)}
@@ -332,6 +371,7 @@ export default function CollectionTabs({ grouped, initialTab }: {
           {hasMore && (
             <div className="pt-6 text-center">
               <button
+                type="button"
                 onClick={() => setPage(p => p + 1)}
                 className="text-gn-muted hover:text-gn-primary text-xs font-semibold
                            uppercase tracking-widest transition-colors"

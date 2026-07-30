@@ -1,4 +1,5 @@
-import type { Metadata } from 'next'
+// src/app/layout.tsx
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 // @ts-ignore: side-effect import of global CSS may not have module declarations in this TS setup
 import './globals.css'
@@ -32,6 +33,11 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     images: ['/og-image.jpg'],
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({

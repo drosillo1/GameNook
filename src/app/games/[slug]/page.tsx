@@ -141,9 +141,11 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     websites:           game.websites as any[] | null,
   }
 
+  const isUnreleased = !!game.releaseDate && new Date(game.releaseDate) > new Date()
+
   return (
     <div className="min-h-screen bg-gn-bg font-body">
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
         
         {/* Back Link */}
         <Link href="/games" className="inline-flex items-center gap-1.5 text-gn-muted hover:text-gn-text text-xs uppercase tracking-widest font-semibold mb-8 transition-colors">
@@ -165,10 +167,10 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             </div>
           </div>
 
-          <div className="p-8 flex flex-col gap-4 min-w-0">
-            <div>
+          <div className="p-5 sm:p-8 flex flex-col gap-4 min-w-0">
+            <div className="min-w-0">
               <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">// Detalle del juego</p>
-              <h1 className="font-display font-black text-3xl md:text-4xl text-gn-text leading-tight">{game.title}</h1>
+              <h1 className="font-display font-black text-2xl sm:text-3xl md:text-4xl text-gn-text leading-tight break-words">{game.title}</h1>
             </div>
 
             <div className="flex flex-wrap gap-3 text-sm text-gn-muted">
@@ -206,17 +208,17 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               </div>
             )}
 
-            <div>
-              {game.releaseDate && new Date(game.releaseDate) > new Date() ? (
+            {game.description && (
+              <GameDescription description={game.description} />
+            )}
+
+            <div className="pt-1">
+              {isUnreleased ? (
                 <FollowButton gameId={game.id} />
               ) : (
                 <CollectionButton gameId={game.id} />
               )}
             </div>
-
-            {game.description && (
-              <GameDescription description={game.description} />
-            )}
 
             {/* Stats Bar */}
             <div className="mt-auto bg-gn-primary/5 border border-gn-primary/15 rounded-xl p-4 flex items-center gap-6 flex-wrap">
@@ -303,7 +305,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
         {/* ── Sección: Tu reseña ── */}
         <div className="mb-6">
-          <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6">
+          <div className="bg-gn-card border border-white/[0.06] rounded-xl p-5 sm:p-6">
             <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">// Tu opinión</p>
             <h2 className="font-display font-bold text-lg text-gn-text mb-5">
               {userReview ? 'Tu reseña' : 'Escribe una reseña'}
@@ -323,12 +325,12 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
         {/* ── Sección: Reseñas de la comunidad ── */}
         <div className="mb-8">
-          <div className="flex items-baseline justify-between mb-5">
-            <div>
+          <div className="flex items-baseline justify-between gap-3 mb-5">
+            <div className="min-w-0">
               <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">// Reseñas</p>
               <h2 className="font-display font-bold text-lg text-gn-text">Opiniones de la comunidad</h2>
             </div>
-            <span className="text-gn-muted text-sm">{stats.total} {stats.total === 1 ? 'reseña' : 'reseñas'}</span>
+            <span className="text-gn-muted text-sm whitespace-nowrap">{stats.total} {stats.total === 1 ? 'reseña' : 'reseñas'}</span>
           </div>
 
           <ReviewList
