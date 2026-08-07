@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')?.slice(0, 100) || null
 
-.
     const { limit, offset } = parsePagination(
       searchParams.get('limit'),
       searchParams.get('offset')
