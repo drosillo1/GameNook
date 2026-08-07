@@ -3,13 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { CollectionStatus } from '@prisma/client'
 import { rateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit'
 
-const VALID_STATUSES = ['WANT_TO_PLAY', 'PLAYING', 'COMPLETED', 'DROPPED', 'WISHLIST'] as const
-type CollectionStatus = typeof VALID_STATUSES[number]
+// El enum se importa de Prisma en vez de redeclarar la lista a mano: una sola
+// fuente de verdad. Si mañana se añade un estado al schema, entra aquí solo.
+const VALID_STATUSES = Object.values(CollectionStatus) as string[]
 
 const isValidStatus = (value: unknown): value is CollectionStatus =>
-  typeof value === 'string' && (VALID_STATUSES as readonly string[]).includes(value)
+  typeof value === 'string' && VALID_STATUSES.includes(value)
 
 // GET — obtener colección del usuario
 export async function GET(request: NextRequest) {
@@ -20,12 +22,18 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
+    const statusParam = searchParams.get('status')
 
-    // Antes: `status as any`. Un ?status=BASURA llegaba a Prisma como valor de
-    // enum inválido → excepción → 500.
-    if (status && !isValidStatus(status)) {
-      return NextResponse.json({ error: 'Estado inválido' }, { status: 400 })
+    // Se valida y se guarda en una variable YA TIPADA. Antes el type guard iba
+    // dentro de un `if (status && !isValidStatus(status))`: TypeScript no
+    // propaga el estrechamiento fuera de una condición negada, así que en el
+    // `where` la variable seguía siendo `string | null` y Prisma la rechazaba.
+    let status: CollectionStatus | undefined
+    if (statusParam) {
+      if (!isValidStatus(statusParam)) {
+        return NextResponse.json({ error: 'Estado inválido' }, { status: 400 })
+      }
+      status = statusParam
     }
 
     const collection = await prisma.gameCollection.findMany({
@@ -81,12 +89,15 @@ export async function POST(request: NextRequest) {
       return rateLimitResponse(rl, 'Demasiados cambios seguidos en tu colección. Espera unos segundos.')
     }
 
-    const { gameId, status } = await request.json()
+    const body = await request.json()
+    const { gameId, status } = body
 
     if (!gameId || typeof gameId !== 'string') {
       return NextResponse.json({ error: 'gameId es requerido' }, { status: 400 })
     }
 
+    // Aquí el type guard sí estrecha correctamente: al ser un `if (!guard)`
+    // con return inmediato, después del bloque `status` es CollectionStatus.
     if (!isValidStatus(status)) {
       return NextResponse.json({ error: 'Estado inválido' }, { status: 400 })
     }
