@@ -1,19 +1,35 @@
-//src/app/api/reviews/route.ts
+// src/app/api/reviews/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit, rateLimitResponse, parsePagination, RATE_LIMITS } from '@/lib/rateLimit'
+
+// Tope para reseñas
+const CONTENT_MAX_LENGTH = 5000
 
 // POST - Crear nueva reseña
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session || !session.user?.email) {
+
+
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'No autorizado' },
         { status: 401 }
       )
+    }
+
+    const userId = session.user.id
+
+    const rl = await rateLimit(
+      `reviews:write:${userId}`,
+      RATE_LIMITS.REVIEW_WRITE.limit,
+      RATE_LIMITS.REVIEW_WRITE.windowSeconds
+    )
+    if (!rl.ok) {
+      return rateLimitResponse(rl, 'Estás publicando reseñas demasiado rápido. Espera un momento.')
     }
 
     const body = await request.json()
@@ -27,28 +43,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!rating || typeof rating !== 'number' || rating < 1 || rating > 10) {
+
+    if (
+      typeof rating !== 'number' ||
+      !Number.isInteger(rating) ||
+      rating < 1 ||
+      rating > 10
+    ) {
       return NextResponse.json(
-        { error: 'La puntuación debe ser un número entre 1 y 10' },
+        { error: 'La puntuación debe ser un número entero entre 1 y 10' },
         { status: 400 }
       )
     }
 
-    // Buscar el usuario
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
+    if (content !== undefined && content !== null && typeof content !== 'string') {
       return NextResponse.json(
-        { error: 'Usuario no encontrado' },
-        { status: 404 }
+        { error: 'Contenido inválido' },
+        { status: 400 }
+      )
+    }
+
+    const trimmedContent = typeof content === 'string' ? content.trim() : ''
+    if (trimmedContent.length > CONTENT_MAX_LENGTH) {
+      return NextResponse.json(
+        { error: `La reseña no puede superar los ${CONTENT_MAX_LENGTH} caracteres` },
+        { status: 400 }
       )
     }
 
     // Verificar que el juego existe
     const game = await prisma.game.findUnique({
-      where: { id: gameId }
+      where:  { id: gameId },
+      select: { id: true },
     })
 
     if (!game) {
@@ -61,11 +87,9 @@ export async function POST(request: NextRequest) {
     // Verificar que el usuario no tenga ya una reseña para este juego
     const existingReview = await prisma.review.findUnique({
       where: {
-        userId_gameId: {
-          userId: user.id,
-          gameId: gameId,
-        },
+        userId_gameId: { userId, gameId },
       },
+      select: { id: true },
     })
 
     if (existingReview) {
@@ -76,32 +100,44 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear la reseña
-    const review = await prisma.review.create({
-      data: {
-        rating,
-        content: content?.trim() || null,
-        userId: user.id,
-        gameId: gameId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            image: true,
-            avatar: true,
+    let review
+    try {
+      review = await prisma.review.create({
+        data: {
+          rating,
+          content: trimmedContent || null,
+          userId,
+          gameId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true,
+              avatar: true,
+            },
+          },
+          game: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+            },
           },
         },
-        game: {
-          select: {
-            id: true,
-            title: true,
-            slug: true,
-          },
-        },
-      },
-    })
+      })
+    } catch (error: any) {
+
+      if (error?.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'Ya tienes una reseña para este juego' },
+          { status: 409 }
+        )
+      }
+      throw error
+    }
 
     return NextResponse.json(review, { status: 201 })
   } catch (error) {
@@ -119,18 +155,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const gameId = searchParams.get('gameId')
     const userId = searchParams.get('userId')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
 
-    const where: any = {}
-    
-    if (gameId) {
-      where.gameId = gameId
-    }
-    
-    if (userId) {
-      where.userId = userId
-    }
+    const { limit, offset } = parsePagination(
+      searchParams.get('limit'),
+      searchParams.get('offset')
+    )
+
+    const where: { gameId?: string; userId?: string } = {}
+
+    if (gameId) where.gameId = gameId
+    if (userId) where.userId = userId
 
     const reviews = await prisma.review.findMany({
       where,

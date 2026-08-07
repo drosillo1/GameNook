@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit'
+
+const CONTENT_MAX_LENGTH = 5000
 
 type RouteParams = {
   params: Promise<{ id: string }>
@@ -11,13 +14,13 @@ type RouteParams = {
 // GET - Obtener reseña específica
 export async function GET(
   request: NextRequest,
-  { params }: RouteParams 
+  { params }: RouteParams
 ) {
   try {
-    const { id } = await params;
+    const { id } = await params
 
     const review = await prisma.review.findUnique({
-      where: { id: id },
+      where: { id },
       include: {
         user: {
           select: {
@@ -61,42 +64,61 @@ export async function PUT(
   { params }: RouteParams
 ) {
   try {
-    const { id } = await params;
+    const { id } = await params
     const session = await getServerSession(authOptions)
-    
-    if (!session || !session.user?.email) {
+
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'No autorizado' },
         { status: 401 }
       )
     }
 
+    const userId = session.user.id
+
+    const rl = await rateLimit(
+      `reviews:write:${userId}`,
+      RATE_LIMITS.REVIEW_WRITE.limit,
+      RATE_LIMITS.REVIEW_WRITE.windowSeconds
+    )
+    if (!rl.ok) {
+      return rateLimitResponse(rl, 'Estás editando reseñas demasiado rápido. Espera un momento.')
+    }
+
     const body = await request.json()
     const { rating, content } = body
 
-    // Validaciones
-    if (!rating || typeof rating !== 'number' || rating < 1 || rating > 10) {
+    if (
+      typeof rating !== 'number' ||
+      !Number.isInteger(rating) ||
+      rating < 1 ||
+      rating > 10
+    ) {
       return NextResponse.json(
-        { error: 'La puntuación debe ser un número entre 1 y 10' },
+        { error: 'La puntuación debe ser un número entero entre 1 y 10' },
         { status: 400 }
       )
     }
 
-    // Buscar el usuario
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
+    if (content !== undefined && content !== null && typeof content !== 'string') {
       return NextResponse.json(
-        { error: 'Usuario no encontrado' },
-        { status: 404 }
+        { error: 'Contenido inválido' },
+        { status: 400 }
+      )
+    }
+
+    const trimmedContent = typeof content === 'string' ? content.trim() : ''
+    if (trimmedContent.length > CONTENT_MAX_LENGTH) {
+      return NextResponse.json(
+        { error: `La reseña no puede superar los ${CONTENT_MAX_LENGTH} caracteres` },
+        { status: 400 }
       )
     }
 
     // Buscar la reseña y verificar que pertenece al usuario
     const existingReview = await prisma.review.findUnique({
-      where: { id: id }
+      where:  { id },
+      select: { id: true, userId: true },
     })
 
     if (!existingReview) {
@@ -106,7 +128,7 @@ export async function PUT(
       )
     }
 
-    if (existingReview.userId !== user.id) {
+    if (existingReview.userId !== userId) {
       return NextResponse.json(
         { error: 'No tienes permisos para editar esta reseña' },
         { status: 403 }
@@ -115,10 +137,10 @@ export async function PUT(
 
     // Actualizar la reseña
     const updatedReview = await prisma.review.update({
-      where: { id: id },
+      where: { id },
       data: {
         rating,
-        content: content?.trim() || null,
+        content: trimmedContent || null,
         updatedAt: new Date(),
       },
       include: {
@@ -157,31 +179,22 @@ export async function DELETE(
   { params }: RouteParams
 ) {
   try {
-    const { id } = await params;
+    const { id } = await params
     const session = await getServerSession(authOptions)
-    
-    if (!session || !session.user?.email) {
+
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'No autorizado' },
         { status: 401 }
       )
     }
 
-    // Buscar el usuario
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Usuario no encontrado' },
-        { status: 404 }
-      )
-    }
+    const userId = session.user.id
 
     // Buscar la reseña y verificar que pertenece al usuario
     const existingReview = await prisma.review.findUnique({
-      where: { id: id }
+      where:  { id },
+      select: { id: true, userId: true },
     })
 
     if (!existingReview) {
@@ -191,17 +204,15 @@ export async function DELETE(
       )
     }
 
-    if (existingReview.userId !== user.id) {
+    if (existingReview.userId !== userId) {
       return NextResponse.json(
         { error: 'No tienes permisos para eliminar esta reseña' },
         { status: 403 }
       )
     }
 
-    // Eliminar la reseña
-    await prisma.review.delete({
-      where: { id: id }
-    })
+    // Eliminar la reseña. Los ReviewLike asociados caen por onDelete: Cascade.
+    await prisma.review.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Reseña eliminada correctamente' })
   } catch (error) {

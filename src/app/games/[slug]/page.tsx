@@ -22,10 +22,13 @@ interface GameDetailPageProps {
 }
 
 // ── Datos del juego cacheados por 24 horas ──
+// findFirst + status: 'APPROVED' (antes findUnique solo por slug). Sin el
+// filtro, un juego REJECTED seguía siendo accesible por URL directa e
+// indexable: moderar lo quitaba del listado pero no lo retiraba de verdad.
 const getGameCached = (slug: string) => unstable_cache(
   async () => {
-    return prisma.game.findUnique({
-      where: { slug },
+    return prisma.game.findFirst({
+      where: { slug, status: 'APPROVED' },
       select: {
         id: true, title: true, slug: true, description: true, 
         imageUrl: true, releaseDate: true, genre: true, 
@@ -153,9 +156,18 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           Volver a juegos
         </Link>
 
-        {/* HERO */}
-        <div className="grid md:grid-cols-[240px_1fr] bg-gn-card border border-white/[0.06] rounded-2xl overflow-hidden mb-8">
-          <div className="relative bg-gn-surface">
+        {/* HERO
+            Sin `overflow-hidden` en este contenedor: recortaba el desplegable
+            del CollectionButton, que es un hijo `absolute`. El z-index no
+            protege de un ancestro con overflow-hidden, así que se perdían las
+            dos últimas opciones del menú ("Seguir" y "Eliminar de colección").
+            El recorte se aplica ahora solo a la portada, que es lo único que
+            necesita respetar las esquinas redondeadas. */}
+        <div className="grid md:grid-cols-[240px_1fr] bg-gn-card border border-white/[0.06] rounded-2xl mb-8">
+          {/* En móvil el grid apila (portada arriba → esquinas superiores);
+              en desktop va a la izquierda (esquinas izquierdas). */}
+          <div className="relative bg-gn-surface overflow-hidden
+                          rounded-t-2xl md:rounded-t-none md:rounded-l-2xl">
             <div className="aspect-[3/4] w-full relative">
               {game.imageUrl ? (
                 <Image src={game.imageUrl} alt={game.title} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 240px" />
@@ -212,9 +224,10 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               <GameDescription description={game.description} />
             )}
 
+            {/* Acción principal — fuera del racimo de chips. */}
             <div className="pt-1">
               {isUnreleased ? (
-                <FollowButton gameId={game.id} />
+                <FollowButton gameId={game.id} variant="hero" />
               ) : (
                 <CollectionButton gameId={game.id} />
               )}

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit'
 
 // GET — estado de un juego concreto en la colección del usuario
 export async function GET(
@@ -11,7 +12,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ entry: null })
     }
 
@@ -37,19 +38,29 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const userId = session.user.id
+
+    const rl = await rateLimit(
+      `collection:write:${userId}`,
+      RATE_LIMITS.COLLECTION_WRITE.limit,
+      RATE_LIMITS.COLLECTION_WRITE.windowSeconds
+    )
+    if (!rl.ok) {
+      return rateLimitResponse(rl, 'Demasiados cambios seguidos en tu colección. Espera unos segundos.')
     }
 
     const { gameId } = await params
 
-    await prisma.gameCollection.delete({
-      where: {
-        userId_gameId: { userId: session.user.id, gameId },
-      },
+
+    const result = await prisma.gameCollection.deleteMany({
+      where: { userId, gameId },
     })
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, removed: result.count })
   } catch (error) {
     console.error('Error removing from collection:', error)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })

@@ -72,6 +72,14 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
       .finally(() => setLoading(false))
   }, [gameId, session])
 
+  // Cerrar con Escape — el backdrop cubre el click fuera, pero no el teclado.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   if (!session?.user) return null
 
   const handleSelect = async (status: CollectionStatus) => {
@@ -104,7 +112,7 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
 
   const active = currentStatus ? STATUS_CONFIG[currentStatus] : null
 
-
+  // Jerarquía visual
   const triggerStyle = loading
     ? 'bg-white/[0.04] border-white/[0.08] text-gn-muted'
     : active
@@ -117,6 +125,7 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
         type="button"
         onClick={() => setOpen(!open)}
         disabled={loading || saving}
+        aria-expanded={open}
         className={`w-full sm:w-auto min-h-[44px] flex items-center justify-center sm:justify-start
                     gap-2 px-5 py-3 rounded-lg border font-bold
                     text-xs uppercase tracking-wider transition-all duration-200
@@ -137,9 +146,11 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          {/* max-h + scroll: con 6 opciones, en un móvil pequeño y con la
+              página scrolleada el menú podría salirse por debajo del viewport. */}
           <div className="absolute left-0 right-0 sm:right-auto top-full mt-2 sm:w-52
                           bg-gn-card border border-white/[0.08] rounded-xl
-                          overflow-hidden shadow-xl z-20">
+                          overflow-y-auto max-h-[60vh] shadow-xl z-20">
 
             {/* Estados de juego */}
             <div className="p-1.5">

@@ -3,19 +3,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { resolveGameAlias } from '@/lib/gameAliases'
 
-// Búsqueda ligera para el dropdown de autocompletado — solo APPROVED,
-// pocos campos, límite bajo. Independiente de los filtros de /games.
-//
-// Estrategia de matching (de más a menos prioritario):
-//   1. Substring exacto en el título o género (rápido, caso normal)
-//   2. Alias conocidos (GTA -> Grand Theft Auto, etc.) — ver gameAliases.ts
-//   3. Similaridad trigram (pg_trgm) — tolera errores tipográficos
-//
+// Búsqueda ligera para el dropdown de autocompletado 
+
+const MAX_QUERY_LENGTH = 100
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const q = searchParams.get('q')?.trim()
+    // El slice evita que una cadena de 100k caracteres dispare similarity()
+    // contra todo el catálogo.
+    const q = searchParams.get('q')?.trim().slice(0, MAX_QUERY_LENGTH)
 
     if (!q || q.length < 2) {
       return NextResponse.json({ games: [] })

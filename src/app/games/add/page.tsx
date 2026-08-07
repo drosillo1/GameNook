@@ -1,3 +1,4 @@
+// src/app/games/add/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -7,7 +8,7 @@ import Link from 'next/link'
 import { ChevronLeft, LockIcon, LoaderIcon } from 'lucide-react'
 import IGDBSearch from '@/components/IGDBSearch'
 import { IGDBGame } from '@/lib/igdb'
-import { translateToSpanish } from '@/lib/translate'
+import { translateToSpanishClient } from '@/lib/translateClient'
 import { toast } from '@/lib/toast'
 
 const inputLocked =
@@ -80,6 +81,17 @@ export default function AddGamePage() {
     platform: [] as string[],
   })
 
+  // Redirección a login en un efecto, no durante el render. Antes el
+  // router.push() se ejecutaba en el cuerpo del componente: es un efecto
+  // secundario en fase de render, React lo penaliza y en Next 15 puede
+  // provocar avisos y navegaciones duplicadas.
+  useEffect(() => {
+    if (status !== 'unauthenticated') return
+    const qs = searchParams.toString()
+    const callbackUrl = `/games/add${qs ? `?${qs}` : ''}`
+    router.replace(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`)
+  }, [status, searchParams, router])
+
   useEffect(() => {
     const igdbIdParam = searchParams.get('igdbId')
     if (!igdbIdParam || isNaN(parseInt(igdbIdParam))) return
@@ -99,7 +111,7 @@ export default function AddGamePage() {
         const coverUrl = game.cover?.url ?? ''
 
         const translated = game.summary
-          ? await translateToSpanish(game.summary)
+          ? await translateToSpanishClient(game.summary)
           : ''
 
         setIgdbId(game.id)
@@ -128,12 +140,17 @@ export default function AddGamePage() {
     )
   }
 
+  // La redirección la dispara el useEffect de arriba; aquí solo se evita
+  // pintar el formulario mientras ocurre.
   if (!session) {
-    // Conserva la URL actual (incluyendo ?q=... si venía de "Agregar juego"
-    // desde el buscador sin resultados) para volver aquí tras iniciar sesión.
-    const callbackUrl = `/games/add${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-    router.push(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`)
-    return null
+    return (
+      <div className="min-h-screen bg-gn-bg flex items-center justify-center">
+        <div className="text-gn-muted text-sm font-semibold uppercase
+                        tracking-widest animate-pulse">
+          Redirigiendo al inicio de sesión...
+        </div>
+      </div>
+    )
   }
 
   // ── Selección IGDB ──────────────────────────────────────────
@@ -161,7 +178,7 @@ export default function AddGamePage() {
     const coverUrl = game.cover?.url ?? ''
 
     const translated = game.summary
-      ? await translateToSpanish(game.summary)
+      ? await translateToSpanishClient(game.summary)
       : ''
 
     setIgdbId(game.id)
@@ -201,14 +218,14 @@ export default function AddGamePage() {
     setError('')
 
     try {
+      // Solo se envían igdbId y description: desde la auditoría, el servidor
+      // deriva título, portada, fecha, géneros y plataformas de IGDB en vez de
+      // confiar en lo que mande el cliente. El resto de formData es local,
+      // para la vista previa.
       const res = await fetch('/api/games', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          description,
-          igdbId,
-        }),
+        body: JSON.stringify({ igdbId, description }),
       })
 
       if (!res.ok) {
@@ -232,7 +249,7 @@ export default function AddGamePage() {
   // ── Render ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gn-bg font-body">
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
 
         <Link
           href="/games"
@@ -247,7 +264,7 @@ export default function AddGamePage() {
           <p className="text-gn-primary text-xs font-semibold uppercase tracking-widest mb-1">
             // Nueva entrada
           </p>
-          <h1 className="font-display font-black text-4xl text-gn-text">
+          <h1 className="font-display font-black text-3xl sm:text-4xl text-gn-text">
             Agregar juego
           </h1>
           <p className="text-gn-muted text-sm mt-1">
@@ -293,7 +310,7 @@ export default function AddGamePage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Link
                         href={`/games/${duplicateGame.slug}`}
                         className="flex-1 flex items-center justify-center gap-1.5
@@ -353,7 +370,7 @@ export default function AddGamePage() {
               {/* ── Datos del juego — solo visibles tras seleccionar ── */}
               {igdbSelected && !isTranslating && (
                 <div className="bg-gn-card border border-white/[0.06] rounded-xl p-6 space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
                     <SectionLabel>Información del juego</SectionLabel>
                     <span className="flex items-center gap-1 text-gn-subtle text-[11px]">
                       <LockIcon className="w-3 h-3" />
@@ -436,7 +453,7 @@ export default function AddGamePage() {
             </div>
 
             {/* ── Sidebar ── */}
-            <div className="sticky top-20">
+            <div className="lg:sticky lg:top-20">
               <div className="bg-gn-card border border-white/[0.06] rounded-xl p-5">
                 <SectionLabel>Vista previa</SectionLabel>
 
