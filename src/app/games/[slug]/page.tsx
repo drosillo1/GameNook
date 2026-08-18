@@ -1,4 +1,3 @@
-// src/app/games/[slug]/page.tsx
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -16,6 +15,7 @@ import GameDescription from '@/components/GameDescription'
 import { translateTheme } from '@/lib/themes'
 import { translateGenre } from '@/lib/genres'
 import FollowButton from '@/components/FollowButton'
+import { getCollectionStatuses } from '@/lib/collectionStatus'
 
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
@@ -85,15 +85,20 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   if (!game) notFound()
 
-  // ── DLCs/expansiones: leemos IDs de BD → cruzamos con catálogo ──
-  let dlcGames: { title: string; slug: string; imageUrl: string | null }[] = []
-  if (game.dlcIgdbIds && game.dlcIgdbIds.length > 0) {
-    dlcGames = await prisma.game.findMany({
-      where: { igdbId: { in: game.dlcIgdbIds }, status: 'APPROVED' },
-      select: { title: true, slug: true, imageUrl: true },
-      orderBy: { releaseDate: 'desc' },
-    })
-  }
+  // ── DLCs/expansiones + estado de colección, en paralelo ──
+  const [dlcGames, collectionStatuses] = await Promise.all([
+    game.dlcIgdbIds && game.dlcIgdbIds.length > 0
+      ? prisma.game.findMany({
+          where: { igdbId: { in: game.dlcIgdbIds }, status: 'APPROVED' },
+          select: { title: true, slug: true, imageUrl: true },
+          orderBy: { releaseDate: 'desc' },
+        })
+      : Promise.resolve([] as { title: string; slug: string; imageUrl: string | null }[]),
+    getCollectionStatuses(session?.user?.id, [game.id]),
+  ])
+
+  const collectionStatus = collectionStatuses[game.id] ?? null
+  const isAuthenticated  = !!session?.user
 
   const stats = calcStats(reviews)
   const userReview = session ? reviews.find(r => r.userId === session.user?.id) : null
@@ -227,9 +232,18 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             {/* Acción principal — fuera del racimo de chips. */}
             <div className="pt-1">
               {isUnreleased ? (
-                <FollowButton gameId={game.id} variant="hero" />
+                <FollowButton
+                  gameId={game.id}
+                  variant="hero"
+                  initialStatus={collectionStatus}
+                  isAuthenticated={isAuthenticated}
+                />
               ) : (
-                <CollectionButton gameId={game.id} />
+                <CollectionButton
+                  gameId={game.id}
+                  initialStatus={collectionStatus}
+                  isAuthenticated={isAuthenticated}
+                />
               )}
             </div>
 

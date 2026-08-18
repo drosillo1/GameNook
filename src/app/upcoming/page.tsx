@@ -1,12 +1,15 @@
 // src/app/upcoming/page.tsx
 import { prisma } from '@/lib/prisma'
 import { unstable_cache } from 'next/cache'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Calendar, Monitor, ChevronLeft, Clock, PlusIcon, HelpCircle } from 'lucide-react'
 import FollowButton from '@/components/FollowButton'
 import { translateGenre } from '@/lib/genres'
 import { formatMonthYear, getReleaseStatusLabel } from '@/lib/upcoming'
+import { getCollectionStatuses, type CollectionStatusMap } from '@/lib/collectionStatus'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -22,6 +25,7 @@ export const metadata: Metadata = {
   },
   alternates: { canonical: 'https://gamenook.es/upcoming' },
 }
+
 
 const getUpcomingGames = unstable_cache(
   async () => {
@@ -94,7 +98,15 @@ function groupByMonth(games: UpcomingGame[]): { label: string; games: UpcomingGa
   return Array.from(groups.entries()).map(([label, games]) => ({ label, games }))
 }
 
-function UpcomingGameCard({ game }: { game: UpcomingGame }) {
+function UpcomingGameCard({
+  game,
+  collectionStatuses,
+  isAuthenticated,
+}: {
+  game:               UpcomingGame
+  collectionStatuses: CollectionStatusMap
+  isAuthenticated:    boolean
+}) {
   const statusLabel = getReleaseStatusLabel(game.releaseStatus)
 
   return (
@@ -174,7 +186,11 @@ function UpcomingGameCard({ game }: { game: UpcomingGame }) {
         )}
 
         <div className="pt-2 border-t border-white/[0.06]">
-          <FollowButton gameId={game.id} />
+          <FollowButton
+            gameId={game.id}
+            initialStatus={collectionStatuses[game.id] ?? null}
+            isAuthenticated={isAuthenticated}
+          />
         </div>
       </div>
     </div>
@@ -182,7 +198,18 @@ function UpcomingGameCard({ game }: { game: UpcomingGame }) {
 }
 
 export default async function UpcomingPage() {
-  const games = await getUpcomingGames()
+  const [games, session] = await Promise.all([
+    getUpcomingGames(),
+    getServerSession(authOptions),
+  ])
+
+
+  const collectionStatuses = await getCollectionStatuses(
+    session?.user?.id,
+    games.map(g => g.id),
+  )
+
+  const isAuthenticated = !!session?.user
   const monthGroups = groupByMonth(games)
 
   return (
@@ -252,7 +279,12 @@ export default async function UpcomingPage() {
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {group.games.map(game => (
-                      <UpcomingGameCard key={game.id} game={game} />
+                      <UpcomingGameCard
+                        key={game.id}
+                        game={game}
+                        collectionStatuses={collectionStatuses}
+                        isAuthenticated={isAuthenticated}
+                      />
                     ))}
                   </div>
                 </section>

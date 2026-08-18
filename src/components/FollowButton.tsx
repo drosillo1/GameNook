@@ -2,36 +2,39 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { EyeIcon } from 'lucide-react'
+import type { CollectionStatus } from '@prisma/client'
 
 type FollowVariant = 'hero' | 'card'
 
-// El icono es SIEMPRE Eye, en los dos estados. Antes se usaba EyeOff para "Seguir"
+interface Props {
+  gameId: string
+
+  initialStatus: CollectionStatus | null
+
+  isAuthenticated: boolean
+  variant?: FollowVariant
+}
+
+
 export default function FollowButton({
   gameId,
+  initialStatus,
+  isAuthenticated,
   variant = 'card',
-}: {
-  gameId: string
-  variant?: FollowVariant
-}) {
-  const { data: session } = useSession()
+}: Props) {
   const router   = useRouter()
   const pathname = usePathname()
 
-  const [following, setFollowing] = useState(false)
-  const [loading,   setLoading]   = useState(true)
+  const [following, setFollowing] = useState(initialStatus === 'WISHLIST')
   const [saving,    setSaving]    = useState(false)
 
+
   useEffect(() => {
-    if (!session?.user) { setLoading(false); return }
-    fetch(`/api/collection/${gameId}`)
-      .then(r => r.json())
-      .then(data => setFollowing(data.entry?.status === 'WISHLIST'))
-      .finally(() => setLoading(false))
-  }, [gameId, session])
+    setFollowing(initialStatus === 'WISHLIST')
+  }, [initialStatus])
 
   // ── Geometría por variante ──
   const shape = variant === 'hero'
@@ -43,7 +46,7 @@ export default function FollowButton({
                 disabled:opacity-40 disabled:cursor-not-allowed ${shape}`
 
   // ── Sin sesión: mismo botón, pero lleva al login ──
-  if (!session?.user) {
+  if (!isAuthenticated) {
     const idleStyle = variant === 'hero'
       ? 'bg-gn-primary border-transparent text-white hover:bg-gn-primary-dark shadow-[0_4px_20px_-4px_rgba(230,57,70,0.5)]'
       : 'bg-white/[0.04] border-white/[0.10] text-gn-text hover:border-yellow-500/40 hover:text-yellow-400 hover:bg-yellow-500/[0.06]'
@@ -79,21 +82,17 @@ export default function FollowButton({
     }
   }
 
-  // Mientras carga, estilo neutro en ambas variantes: evita el parpadeo
-  // rojo/gris → amarillo cuando el juego ya estaba seguido.
-  const style = loading
-    ? 'bg-white/[0.04] border-white/[0.08] text-gn-muted'
-    : following
-      ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/[0.16]'
-      : variant === 'hero'
-        ? 'bg-gn-primary border-transparent text-white hover:bg-gn-primary-dark shadow-[0_4px_20px_-4px_rgba(230,57,70,0.5)]'
-        : 'bg-white/[0.04] border-white/[0.10] text-gn-text hover:border-yellow-500/40 hover:text-yellow-400 hover:bg-yellow-500/[0.06]'
+  const style = following
+    ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/[0.16]'
+    : variant === 'hero'
+      ? 'bg-gn-primary border-transparent text-white hover:bg-gn-primary-dark shadow-[0_4px_20px_-4px_rgba(230,57,70,0.5)]'
+      : 'bg-white/[0.04] border-white/[0.10] text-gn-text hover:border-yellow-500/40 hover:text-yellow-400 hover:bg-yellow-500/[0.06]'
 
   return (
     <button
       type="button"
       onClick={handleToggle}
-      disabled={loading || saving}
+      disabled={saving}
       title={following ? 'Dejar de seguir este juego' : 'Seguir este juego'}
       className={`${base} ${style}`}
     >
@@ -102,7 +101,7 @@ export default function FollowButton({
       ) : (
         <EyeIcon className="w-4 h-4" />
       )}
-      {loading ? 'Cargando...' : following ? 'Siguiendo' : 'Seguir'}
+      {following ? 'Siguiendo' : 'Seguir'}
     </button>
   )
 }

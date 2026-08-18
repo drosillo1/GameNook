@@ -2,11 +2,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { BookmarkIcon, CheckIcon, PlayIcon, XIcon, ClockIcon, ChevronDownIcon, EyeIcon } from 'lucide-react'
+import type { CollectionStatus } from '@prisma/client'
 
-type CollectionStatus = 'WANT_TO_PLAY' | 'PLAYING' | 'COMPLETED' | 'DROPPED' | 'WISHLIST'
+// El tipo se IMPORTA de Prisma en vez de redeclararse. Antes había una unión
+// literal local: dos definiciones del mismo concepto acaban desincronizándose,
+// y un valor nuevo en el enum no daría error aquí. `import type` se borra en
+// compilación, así que no arrastra @prisma/client al bundle del cliente.
 
 const STATUS_CONFIG: Record<CollectionStatus, {
   label: string
@@ -55,22 +58,24 @@ const STATUS_CONFIG: Record<CollectionStatus, {
 // Los estados de "juego" van primero, WISHLIST al final separado
 const PLAY_STATUSES: CollectionStatus[] = ['WANT_TO_PLAY', 'PLAYING', 'COMPLETED', 'DROPPED']
 
-export default function CollectionButton({ gameId }: { gameId: string }) {
-  const { data: session } = useSession()
+interface Props {
+  gameId: string
+
+  initialStatus: CollectionStatus | null
+  /** Sesión resuelta en el servidor (antes: useSession, con parpadeo al montar). */
+  isAuthenticated: boolean
+}
+
+export default function CollectionButton({ gameId, initialStatus, isAuthenticated }: Props) {
   const router = useRouter()
-  const [currentStatus, setCurrentStatus] = useState<CollectionStatus | null>(null)
-  const [loading,       setLoading]       = useState(true)
+  const [currentStatus, setCurrentStatus] = useState<CollectionStatus | null>(initialStatus)
   const [open,          setOpen]          = useState(false)
   const [saving,        setSaving]        = useState(false)
 
-  // Cargar estado actual
+  // Resincroniza cuando el servidor manda un estado nuevo (tras router.refresh()).
   useEffect(() => {
-    if (!session?.user) { setLoading(false); return }
-    fetch(`/api/collection/${gameId}`)
-      .then(r => r.json())
-      .then(data => setCurrentStatus(data.entry?.status ?? null))
-      .finally(() => setLoading(false))
-  }, [gameId, session])
+    setCurrentStatus(initialStatus)
+  }, [initialStatus])
 
   // Cerrar con Escape — el backdrop cubre el click fuera, pero no el teclado.
   useEffect(() => {
@@ -80,7 +85,7 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
-  if (!session?.user) return null
+  if (!isAuthenticated) return null
 
   const handleSelect = async (status: CollectionStatus) => {
     setSaving(true)
@@ -112,19 +117,16 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
 
   const active = currentStatus ? STATUS_CONFIG[currentStatus] : null
 
-  // Jerarquía visual
-  const triggerStyle = loading
-    ? 'bg-white/[0.04] border-white/[0.08] text-gn-muted'
-    : active
-      ? `${active.bg} ${active.border} ${active.color}`
-      : 'bg-gn-primary border-transparent text-white hover:bg-gn-primary-dark shadow-[0_4px_20px_-4px_rgba(230,57,70,0.5)]'
+  const triggerStyle = active
+    ? `${active.bg} ${active.border} ${active.color}`
+    : 'bg-gn-primary border-transparent text-white hover:bg-gn-primary-dark shadow-[0_4px_20px_-4px_rgba(230,57,70,0.5)]'
 
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        disabled={loading || saving}
+        disabled={saving}
         aria-expanded={open}
         className={`w-full sm:w-auto min-h-[44px] flex items-center justify-center sm:justify-start
                     gap-2 px-5 py-3 rounded-lg border font-bold
@@ -139,7 +141,7 @@ export default function CollectionButton({ gameId }: { gameId: string }) {
         ) : (
           <BookmarkIcon className="w-4 h-4" />
         )}
-        {loading ? 'Cargando...' : active ? active.label : 'Añadir a colección'}
+        {active ? active.label : 'Añadir a colección'}
         <ChevronDownIcon className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
