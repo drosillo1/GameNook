@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   },
   compress: true,
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -16,7 +17,6 @@ const nextConfig: NextConfig = {
         hostname: 'lh3.googleusercontent.com', // avatares Google
       },
     ],
-    formats: ['image/avif', 'image/webp'],
   },
 }
 
