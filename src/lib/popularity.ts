@@ -18,9 +18,11 @@ export function popularityScore(game: {
   let monthsOld    = 999
   if (game.releaseDate) {
     const releaseTime = new Date(game.releaseDate).getTime()
-    const ageYears     = (now - releaseTime) / (1000 * 60 * 60 * 24 * 365)
-    recencyScore       = 1 / (1 + ageYears * 0.08)
-    monthsOld          = ageYears * 12
+
+
+    const ageYears = Math.max(0, (now - releaseTime) / (1000 * 60 * 60 * 24 * 365))
+    recencyScore   = 1 / (1 + ageYears * 0.08)
+    monthsOld      = ageYears * 12
   }
 
   const newGameBoost = monthsOld < 3 ? 1.4 : monthsOld < 6 ? 1.2 : 1.0

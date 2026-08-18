@@ -103,7 +103,8 @@ model Game {
   // ── Upcoming ──
   releaseStatus       Int?
 
-  @@index([status, popularityScore])
+    @@index([status, popularityScore])
+    @@index([status, releaseDate])
 }
 
 model Review {
