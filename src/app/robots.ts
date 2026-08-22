@@ -1,34 +1,30 @@
 // src/app/robots.ts
 
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
+import { SITE_URL } from '@/lib/site'
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXTAUTH_URL ?? 'https://gamenook.es'
-
   return {
     rules: [
       {
-        // La regla sin userAgent específico aplica a todos los crawlers
-        // (Googlebot, Bingbot, etc.)
         userAgent: '*',
 
-        allow: [
-          '/',          // home
-          '/games',     // catálogo
-          '/games/',    // todas las fichas de juego
-        ],
+        allow: '/',
 
         disallow: [
           '/api/',        // rutas de API — no tienen sentido indexadas
           '/admin',       // panel de moderación — privado
-          '/collection',  // biblioteca personal — requiere sesión, no indexable
-          '/profile',     // perfil de usuario — privado
           '/auth/',       // páginas de login — no aportan SEO
-          '/onboarding'
+          '/onboarding',  // flujo de alta — requiere sesión
+          '/collection',  // biblioteca personal — requiere sesión
+
+
+          '/profile$',
+          '/profile/edit',
         ],
       },
     ],
 
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   }
 }

@@ -10,20 +10,26 @@ import FollowButton from '@/components/FollowButton'
 import { translateGenre } from '@/lib/genres'
 import { formatMonthYear, getReleaseStatusLabel } from '@/lib/upcoming'
 import { getCollectionStatuses, type CollectionStatusMap } from '@/lib/collectionStatus'
+import { SITE_URL } from '@/lib/site'
 import type { Metadata } from 'next'
+
+// Nº de portadas con prioridad alta: la primera fila visible sin scroll.
+const PRIORITY_CARDS = 4
 
 export const metadata: Metadata = {
   title: 'Próximos lanzamientos | GameNook',
   description: 'Descubre los videojuegos que están por llegar. Síguelos para no perderte su lanzamiento.',
   openGraph: {
     title: 'Próximos lanzamientos | GameNook',
-    description: 'Descubre los videojuegos que están por llegar.',
+    description: 'Descubre los juegos que están por llegar.',
     type: 'website',
     locale: 'es_ES',
-    url: 'https://gamenook.es/upcoming',
+    // Antes estaba hardcodeado sin www, y gamenook.es devuelve 307 hacia
+    // www.gamenook.es. SITE_URL centraliza el host canónico.
+    url: `${SITE_URL}/upcoming`,
     siteName: 'GameNook',
   },
-  alternates: { canonical: 'https://gamenook.es/upcoming' },
+  alternates: { canonical: `${SITE_URL}/upcoming` },
 }
 
 
@@ -102,10 +108,13 @@ function UpcomingGameCard({
   game,
   collectionStatuses,
   isAuthenticated,
+  priority = false,
 }: {
   game:               UpcomingGame
   collectionStatuses: CollectionStatusMap
   isAuthenticated:    boolean
+  /** Solo las primeras tarjetas de la página, contando entre todos los meses. */
+  priority?:          boolean
 }) {
   const statusLabel = getReleaseStatusLabel(game.releaseStatus)
 
@@ -121,7 +130,9 @@ function UpcomingGameCard({
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              loading="lazy"
+              // next/image lanza error si recibe `priority` y `loading="lazy"`
+              // a la vez, así que se aplica uno u otro, nunca ambos.
+              {...(priority ? { priority: true } : { loading: 'lazy' as const })}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gn-muted">
@@ -212,6 +223,13 @@ export default async function UpcomingPage() {
   const isAuthenticated = !!session?.user
   const monthGroups = groupByMonth(games)
 
+  let cardOffset = 0
+  const groupsWithOffset = monthGroups.map(group => {
+    const offset = cardOffset
+    cardOffset += group.games.length
+    return { ...group, offset }
+  })
+
   return (
     <div className="min-h-screen bg-gn-bg font-body">
       <div className="max-w-7xl mx-auto px-6 py-10">
@@ -262,7 +280,7 @@ export default async function UpcomingPage() {
         ) : (
           <>
             <div className="space-y-10">
-              {monthGroups.map(group => (
+              {groupsWithOffset.map(group => (
                 <section key={group.label}>
                   <div className="flex items-center gap-3 mb-5">
                     {group.label === 'Fecha por confirmar'
@@ -278,12 +296,13 @@ export default async function UpcomingPage() {
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {group.games.map(game => (
+                    {group.games.map((game, i) => (
                       <UpcomingGameCard
                         key={game.id}
                         game={game}
                         collectionStatuses={collectionStatuses}
                         isAuthenticated={isAuthenticated}
+                        priority={group.offset + i < PRIORITY_CARDS}
                       />
                     ))}
                   </div>

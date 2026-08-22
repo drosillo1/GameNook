@@ -27,7 +27,13 @@ export function getRatingMeta(rating: number | null | undefined) {
   return                { icon: '🎮', color: '#6b7280' }
 }
 
-export default function GameCard({ game }: { game: GameCardGame }) {
+export default function GameCard({
+  game,
+  priority = false,
+}: {
+  game: GameCardGame
+  priority?: boolean
+}) {
   const meta = getRatingMeta(game.averageRating)
 
   return (
@@ -45,7 +51,9 @@ export default function GameCard({ game }: { game: GameCardGame }) {
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            loading="lazy"
+            // next/image lanza un error si recibe `priority` y `loading="lazy"`
+            // a la vez, así que se aplica uno u otro, nunca ambos.
+            {...(priority ? { priority: true } : { loading: 'lazy' as const })}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-gn-muted">

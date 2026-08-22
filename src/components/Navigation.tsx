@@ -65,11 +65,13 @@ export default function Navigation() {
           className="flex items-center gap-3 min-w-0 flex-shrink group"
           onClick={() => setMobileOpen(false)}
         >
+
           <Image
-            src="/logo.png"
+            src="/logo-header.png"
             alt="GameNook"
-            width={56}
-            height={56}
+            width={128}
+            height={128}
+            priority
             className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0 transition-transform group-hover:scale-105"
           />
 

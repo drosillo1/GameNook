@@ -1,42 +1,69 @@
 // src/app/sitemap.ts
 
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
+import { SITE_URL } from '@/lib/site'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXTAUTH_URL ?? 'https://gamenook.es'
-
   // ── Páginas estáticas ────────────────────────────────────────────────
   const staticRoutes: MetadataRoute.Sitemap = [
     {
-      url:             `${baseUrl}/`,
+      url:             `${SITE_URL}/`,
       lastModified:    new Date(),
-      changeFrequency: 'daily',    // la home cambia con nuevas reseñas y juegos
+      changeFrequency: 'daily',
       priority:        1.0,
     },
     {
-      url:             `${baseUrl}/games`,
+      url:             `${SITE_URL}/games`,
       lastModified:    new Date(),
-      changeFrequency: 'daily',    // se añaden juegos frecuentemente
+      changeFrequency: 'daily',
       priority:        0.9,
+    },
+    {
+      url:             `${SITE_URL}/upcoming`,
+      lastModified:    new Date(),
+      changeFrequency: 'weekly',   // depende de import-upcoming.ts, que es manual
+      priority:        0.7,
     },
   ]
 
-  // ── Páginas dinámicas — una por juego aprobado ───────────────────────
-  // Solo traemos slug y updatedAt — lo mínimo necesario, sin cargar
-  // relaciones ni campos pesados.
+  // ── Fichas de juego ──────────────────────────────────────────────────
+
   const games = await prisma.game.findMany({
     where:  { status: 'APPROVED' },
-    select: { slug: true, updatedAt: true },
-    orderBy: { updatedAt: 'desc' },
+    select: {
+      slug:      true,
+      createdAt: true,
+      reviews: {
+        select:  { createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take:    1,
+      },
+    },
   })
 
   const gameRoutes: MetadataRoute.Sitemap = games.map(game => ({
-    url:             `${baseUrl}/games/${game.slug}`,
-    lastModified:    game.updatedAt,   // fecha real del último cambio en BD
-    changeFrequency: 'weekly',         // las reseñas llegan, pero no a diario
+    url:             `${SITE_URL}/games/${game.slug}`,
+    lastModified:    game.reviews[0]?.createdAt ?? game.createdAt,
+    changeFrequency: 'weekly',
     priority:        0.8,
   }))
 
-  return [...staticRoutes, ...gameRoutes]
+
+  const users = await prisma.user.findMany({
+    where: {
+      username: { not: null },
+      reviews:  { some: {} },
+    },
+    select: { username: true, updatedAt: true },
+  })
+
+  const profileRoutes: MetadataRoute.Sitemap = users.map(user => ({
+    url:             `${SITE_URL}/profile/${user.username}`,
+    lastModified:    user.updatedAt,   // aquí sí es fiable: User no se toca por lotes
+    changeFrequency: 'weekly',
+    priority:        0.6,
+  }))
+
+  return [...staticRoutes, ...gameRoutes, ...profileRoutes]
 }

@@ -7,11 +7,20 @@ import Link from 'next/link'
 import CollectionTabs from '@/components/CollectionTabs'
 
 async function getUserCollection(userId: string) {
+
   const entries = await prisma.gameCollection.findMany({
-    where: { userId },
-    include: {
+    where:  { userId },
+    select: {
+      id:        true,
+      status:    true,
+      createdAt: true,
       game: {
-        include: {
+        select: {
+          id:       true,
+          title:    true,
+          slug:     true,
+          imageUrl: true,
+          genre:    true,
           reviews: {
             where:  { userId },
             select: { rating: true, content: true, id: true },
@@ -24,13 +33,17 @@ async function getUserCollection(userId: string) {
   })
 
   return entries.map(e => ({
-    ...e,
+    id:        e.id,
+    status:    e.status,
+    createdAt: e.createdAt,
     game: {
-      ...e.game,
-      userReview:    e.game.reviews[0] ?? null,
-      averageRating: e.game.reviews.length > 0
-        ? e.game.reviews.reduce((s, r) => s + r.rating, 0) / e.game.reviews.length
-        : null,
+      id:         e.game.id,
+      title:      e.game.title,
+      slug:       e.game.slug,
+      imageUrl:   e.game.imageUrl,
+      genre:      e.game.genre,
+      _count:     e.game._count,
+      userReview: e.game.reviews[0] ?? null,
     },
   }))
 }

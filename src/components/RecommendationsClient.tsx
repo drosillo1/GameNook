@@ -8,6 +8,12 @@ import GameCard from './GameCard'
 import { translateGenre, getGenreColor } from '@/lib/genres'
 import type { RecommendedGame } from '@/lib/recommendations'
 
+// Nº de portadas que se cargan sin lazy y con prioridad alta: la primera fila
+// visible sin scroll. El informe de Lighthouse de /recommendations detectó que
+// la portada LCP llevaba `loading="lazy"` — el navegador retrasaba justo el
+// recurso más importante de la página.
+const PRIORITY_CARDS = 4
+
 interface Props {
   games:           RecommendedGame[]
   availableGenres: string[]
@@ -262,7 +268,7 @@ export default function RecommendationsClient({ games, availableGenres }: Props)
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map(game => {
+          {filtered.map((game, i) => {
             const reason = buildReason(game)
 
             // Contenido de la explicación — común a la versión pulsable y la estática.
@@ -313,7 +319,7 @@ export default function RecommendationsClient({ games, availableGenres }: Props)
                   </div>
                 )}
 
-                <GameCard game={game} />
+                <GameCard game={game} priority={i < PRIORITY_CARDS} />
               </div>
             )
           })}

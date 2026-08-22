@@ -3,10 +3,15 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { PlayIcon, CheckIcon, ClockIcon, XIcon, EyeIcon } from 'lucide-react'
 import { RatingIcon } from './RatingIcon'
+import { translateGenre } from '@/lib/genres'
 
 const PAGE_SIZE = 12
+
+
+const PRIORITY_CARDS = 4
 
 type SortOption = 'recent' | 'oldest' | 'alphabetical' | 'rating_desc'
 
@@ -28,7 +33,6 @@ type CollectionEntry = {
     imageUrl:  string | null
     genre:     string[]
     userReview: { rating: number; content: string | null } | null
-    averageRating: number | null
     _count:    { reviews: number }
   }
 }
@@ -105,7 +109,16 @@ function getRatingMeta(rating: number) {
   return               { iconName: 'Sword' as const,  color: '#6b7280' }
 }
 
-function GameCard({ entry, statusKey }: { entry: CollectionEntry; statusKey: keyof Grouped }) {
+function GameCard({
+  entry,
+  statusKey,
+  priority = false,
+}: {
+  entry:     CollectionEntry
+  statusKey: keyof Grouped
+  /** Solo las primeras tarjetas visibles: quita el lazy y pide prioridad alta. */
+  priority?: boolean
+}) {
   const { game } = entry
   const ratingMeta = game.userReview ? getRatingMeta(game.userReview.rating) : null
   const status = STATUS_META[statusKey]
@@ -120,10 +133,14 @@ function GameCard({ entry, statusKey }: { entry: CollectionEntry; statusKey: key
       {/* Portada del juego — formato vertical completo, sin recortes (igual que en perfil) */}
       <div className="relative aspect-[3/4] bg-gn-surface overflow-hidden flex-shrink-0">
         {game.imageUrl ? (
-          <img
+          <Image
             src={game.imageUrl}
             alt={game.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 50vw, 33vw"
+
+            {...(priority ? { priority: true } : { loading: 'lazy' as const })}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gn-muted">
@@ -159,7 +176,7 @@ function GameCard({ entry, statusKey }: { entry: CollectionEntry; statusKey: key
                 className="px-2 py-0.5 bg-gn-primary/8 border border-gn-primary/15
                            text-red-300 text-[10px] font-semibold uppercase tracking-wide rounded"
               >
-                {g}
+                {translateGenre(g)}
               </span>
             ))}
           </div>
@@ -363,8 +380,13 @@ export default function CollectionTabs({ grouped, initialTab }: {
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {visible.map(entry => (
-              <GameCard key={entry.id} entry={entry} statusKey={active} />
+            {visible.map((entry, i) => (
+              <GameCard
+                key={entry.id}
+                entry={entry}
+                statusKey={active}
+                priority={i < PRIORITY_CARDS}
+              />
             ))}
           </div>
 

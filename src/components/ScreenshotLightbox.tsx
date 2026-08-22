@@ -13,6 +13,11 @@ interface Props {
   screenshots: Screenshot[]
 }
 
+
+function withSize(url: string, size: string): string {
+  return url.replace(/\/t_[a-z0-9_]+\//, `/t_${size}/`)
+}
+
 export default function ScreenshotLightbox({ screenshots }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -73,7 +78,12 @@ export default function ScreenshotLightbox({ screenshots }: Props) {
                          hover:border-gn-primary/30 hover:scale-[1.02]
                          transition-all duration-200 group"
             >
-              <img src={shot.url} alt={`Screenshot ${i + 1}`} className="w-full h-full object-cover" />
+              <img
+                src={withSize(shot.url, 'screenshot_med')}
+                alt={`Screenshot ${i + 1}`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100
                               transition-opacity flex items-center justify-center">
                 <span className="text-white text-xs font-semibold uppercase tracking-widest">Ver</span>
@@ -98,7 +108,7 @@ export default function ScreenshotLightbox({ screenshots }: Props) {
         >
           <div className="relative max-w-5xl w-full mx-4" onClick={e => e.stopPropagation()}>
             <img
-              src={screenshots[lightboxIndex].url.replace('t_screenshot_big', 't_screenshot_huge')}
+              src={withSize(screenshots[lightboxIndex].url, 'screenshot_huge')}
               alt={`Screenshot ${lightboxIndex + 1}`}
               className="w-full max-h-[80vh] object-contain rounded-xl"
             />
@@ -149,7 +159,8 @@ export default function ScreenshotLightbox({ screenshots }: Props) {
                                  ? 'border-gn-primary opacity-100'
                                  : 'border-transparent opacity-50 hover:opacity-75'}`}
                 >
-                  <img src={shot.url} alt="" className="w-full h-full object-cover" />
+
+                  <img src={withSize(shot.url, 'screenshot_med')} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
