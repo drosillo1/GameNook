@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import Link from 'next/link'
 import { PlusIcon } from 'lucide-react'
 import GamesClient from '@/components/GamesClient'
+import { SITE_URL } from '@/lib/site'
 import type { Prisma } from '@prisma/client'
 import type { Metadata } from 'next'
 import type { SortKey, PaginatedGames } from '@/types/games'
@@ -15,6 +16,21 @@ export const revalidate = 3600 // Cache 1 hora
 // Tamaño de página fijo — ya no es seleccionable por el usuario
 // (antes había selector 24/48/96; se quitó para reducir carga y simplificar UI)
 const PAGE_SIZE = 20
+
+const GAME_SELECT = {
+  id: true,
+  title: true,
+  slug: true,
+  imageUrl: true,
+  genre: true,
+  platform: true,
+  releaseDate: true,
+  igdbRating: true,
+  igdbRatingCount: true,
+  createdAt: true,
+  reviews: { select: { rating: true } },
+  _count: { select: { reviews: true } },
+} satisfies Prisma.GameSelect
 
 const getFilteredGames = (
   sortBy: SortKey,
@@ -30,76 +46,108 @@ const getFilteredGames = (
       where.genre = { hasSome: selectedGenres }
     }
 
-    // Construir orderBy — 'popular' ahora usa la columna popularityScore
-    // precalculada por cron diario (src/app/api/cron/popularity/route.ts),
-    // así que se puede paginar directamente en BD igual que el resto de sorts.
-    // Ya NO se trae el catálogo completo a memoria en cada request.
-    let orderBy: Prisma.GameOrderByWithRelationInput | Prisma.GameOrderByWithRelationInput[] = { popularityScore: 'desc' }
+    // Construir orderBy — 'popular' usa la columna popularityScore precalculada
+    // por cron diario (src/app/api/cron/popularity/route.ts), así que se puede
+    // paginar directamente en BD igual que el resto de sorts.
+    //
+    // `nulls: 'last'` en los sorts de fecha: Postgres coloca los NULL PRIMERO en
+    // un ORDER BY ... DESC, así que los juegos sin releaseDate encabezaban
+    // "Más recientes". Sin el modificador, lo primero que veía el usuario en ese
+    // sort eran precisamente los juegos de los que no sabemos la fecha.
+    let orderBy: Prisma.GameOrderByWithRelationInput = { popularityScore: 'desc' }
 
     switch (sortBy) {
       case 'popular':      orderBy = { popularityScore: 'desc' }; break
       case 'title_asc':    orderBy = { title: 'asc' }; break
       case 'title_desc':   orderBy = { title: 'desc' }; break
-      case 'release_desc': orderBy = { releaseDate: 'desc' }; break
-      case 'release_asc':  orderBy = { releaseDate: 'asc' }; break
+      case 'release_desc': orderBy = { releaseDate: { sort: 'desc', nulls: 'last' } }; break
+      case 'release_asc':  orderBy = { releaseDate: { sort: 'asc',  nulls: 'last' } }; break
       case 'added_desc':   orderBy = { createdAt: 'desc' }; break
-      case 'rating_desc':  orderBy = { igdbRating: 'desc' }; break
+      case 'rating_desc':  orderBy = { igdbRating: { sort: 'desc', nulls: 'last' } }; break
       case 'reviews_desc': orderBy = { reviews: { _count: 'desc' } }; break
       default:              orderBy = { popularityScore: 'desc' }
     }
 
-    // minRating sigue filtrándose por averageRating (rating de usuarios de
-    // GameNook), que no está en BD como columna — se sigue calculando tras
-    // traer la página. Como ya no traemos el catálogo entero, esto es barato:
-    // sólo afecta a los PAGE_SIZE juegos de la página actual, no a todos.
-    //
-    // Importante: si hay minRating activo, pedimos una página más grande a
-    // BD (margen) y filtramos después, porque no podemos filtrar por rating
-    // promedio de reviews directamente en la query de Prisma.
-    const fetchMultiplier = minRating > 0 ? 4 : 1
     const skip = (page - 1) * PAGE_SIZE
 
-    const total = await prisma.game.count({ where })
+    // ── Camino con filtro de nota ────────────────────────────────────────
+    //
+    // `averageRating` es la media de reseñas de GameNook y no existe como
+    // columna, así que no se puede filtrar en la query de Prisma.
+    //
+    // La versión anterior traía una ventana ampliada ((skip + PAGE_SIZE) * 4),
+    // filtraba y devolvía `total: filtered.length`. Eso contaba solo dentro de
+    // la ventana traída, no del catálogo, así que el número de páginas salía
+    // corto y las últimas eran inalcanzables.
+    //
+    // Ahora: una query LIGERA (solo id + ratings) para saber qué juegos superan
+    // el umbral y cuántos son en total, y una segunda query con los datos
+    // completos de únicamente los 20 de la página pedida.
+    if (minRating > 0) {
+      const all = await prisma.game.findMany({
+        where,
+        orderBy,
+        select: { id: true, reviews: { select: { rating: true } } },
+      })
 
-    const games = await prisma.game.findMany({
-      where,
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        imageUrl: true,
-        genre: true,
-        platform: true,
-        releaseDate: true,
-        igdbRating: true,
-        igdbRatingCount: true,
-        createdAt: true,
-        reviews: { select: { rating: true } },
-        _count: { select: { reviews: true } },
-      },
-      orderBy,
-      skip: minRating > 0 ? 0 : skip,
-      take: minRating > 0 ? (skip + PAGE_SIZE) * fetchMultiplier : PAGE_SIZE,
-    })
+      const qualifyingIds = all
+        .filter(g => {
+          if (g.reviews.length === 0) return false
+          const avg = g.reviews.reduce((s, r) => s + r.rating, 0) / g.reviews.length
+          return avg >= minRating
+        })
+        .map(g => g.id)
 
-    const normalized = games.map(game => ({
+      const pageIds = qualifyingIds.slice(skip, skip + PAGE_SIZE)
+
+      if (pageIds.length === 0) {
+        return { items: [], total: qualifyingIds.length }
+      }
+
+      const rows = await prisma.game.findMany({
+        where:  { id: { in: pageIds } },
+        select: GAME_SELECT,
+      })
+
+      // `in` no garantiza orden: se reordena según la secuencia ya ordenada
+      const byId = new Map(rows.map(r => [r.id, r]))
+      const items = pageIds
+        .map(id => byId.get(id))
+        .filter((g): g is NonNullable<typeof g> => g !== undefined)
+        .map(game => ({
+          ...game,
+          releaseDate: game.releaseDate?.toISOString() ?? null,
+          createdAt:   game.createdAt.toISOString(),
+          averageRating: game.reviews.length > 0
+            ? game.reviews.reduce((s, r) => s + r.rating, 0) / game.reviews.length
+            : null,
+        }))
+
+      return { items, total: qualifyingIds.length }
+    }
+
+    // ── Camino normal — paginación íntegra en BD ─────────────────────────
+    const [total, games] = await Promise.all([
+      prisma.game.count({ where }),
+      prisma.game.findMany({
+        where,
+        select: GAME_SELECT,
+        orderBy,
+        skip,
+        take: PAGE_SIZE,
+      }),
+    ])
+
+    const items = games.map(game => ({
       ...game,
       releaseDate: game.releaseDate?.toISOString() ?? null,
-      createdAt: game.createdAt.toISOString(),
+      createdAt:   game.createdAt.toISOString(),
       averageRating: game.reviews.length > 0
         ? game.reviews.reduce((s, r) => s + r.rating, 0) / game.reviews.length
         : null,
     }))
 
-    if (minRating > 0) {
-      const filtered = normalized.filter(
-        game => game.averageRating !== null && game.averageRating >= minRating
-      )
-      const items = filtered.slice(skip, skip + PAGE_SIZE)
-      return { items, total: filtered.length }
-    }
-
-    return { items: normalized, total }
+    return { items, total }
   },
   ['filtered-games', sortBy, selectedGenres.slice().sort().join(','), minRating.toString(), String(page), String(PAGE_SIZE)],
   { revalidate: 3600 }
@@ -145,7 +193,10 @@ export async function generateMetadata({
     ? 'Catálogo de juegos | GameNook'
     : `Catálogo de juegos - página ${page} | GameNook`
   const description = `Explora el catálogo de GameNook. Navega la página ${page} de nuestra biblioteca de juegos aprobados.`
-  const canonicalPath = `https://gamenook.es/games${page === 1 ? '' : `?page=${page}`}`
+  // Antes estaba hardcodeado como 'https://gamenook.es/games', sin www — y ese
+  // host devuelve 307. Le estábamos declarando a Google una canónica que
+  // redirige, en TODAS las páginas del catálogo.
+  const canonicalPath = `${SITE_URL}/games${page === 1 ? '' : `?page=${page}`}`
 
   return {
     title,
