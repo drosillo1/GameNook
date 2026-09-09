@@ -175,7 +175,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                           rounded-t-2xl md:rounded-t-none md:rounded-l-2xl">
             <div className="aspect-[3/4] w-full relative">
               {game.imageUrl ? (
-                <Image src={game.imageUrl} alt={game.title} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 240px" />
+                <Image src={game.imageUrl.replace('/t_cover_big/', '/t_cover_big_2x/')} alt={game.title} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 240px" />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gn-muted">
                   <span className="text-5xl">🎮</span>
