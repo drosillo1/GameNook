@@ -17,6 +17,16 @@ export const revalidate = 3600 // Cache 1 hora
 // (antes había selector 24/48/96; se quitó para reducir carga y simplificar UI)
 const PAGE_SIZE = 20
 
+
+function getTodayKey(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+
+function releasedFilter(today: string): Prisma.GameWhereInput {
+  return { releaseDate: { lte: new Date(`${today}T23:59:59.999Z`) } }
+}
+
 const GAME_SELECT = {
   id: true,
   title: true,
@@ -37,10 +47,14 @@ const getFilteredGames = (
   selectedGenres: string[],
   minRating: number,
   page = 1,
+  today: string,
 ) => unstable_cache(
   async (): Promise<PaginatedGames> => {
     // Construir where
-    const where: Prisma.GameWhereInput = { status: 'APPROVED' }
+    const where: Prisma.GameWhereInput = {
+      status: 'APPROVED',
+      ...releasedFilter(today),
+    }
 
     if (selectedGenres.length > 0) {
       where.genre = { hasSome: selectedGenres }
@@ -49,11 +63,6 @@ const getFilteredGames = (
     // Construir orderBy — 'popular' usa la columna popularityScore precalculada
     // por cron diario (src/app/api/cron/popularity/route.ts), así que se puede
     // paginar directamente en BD igual que el resto de sorts.
-    //
-    // `nulls: 'last'` en los sorts de fecha: Postgres coloca los NULL PRIMERO en
-    // un ORDER BY ... DESC, así que los juegos sin releaseDate encabezaban
-    // "Más recientes". Sin el modificador, lo primero que veía el usuario en ese
-    // sort eran precisamente los juegos de los que no sabemos la fecha.
     let orderBy: Prisma.GameOrderByWithRelationInput = { popularityScore: 'desc' }
 
     switch (sortBy) {
@@ -75,13 +84,8 @@ const getFilteredGames = (
     // `averageRating` es la media de reseñas de GameNook y no existe como
     // columna, así que no se puede filtrar en la query de Prisma.
     //
-    // La versión anterior traía una ventana ampliada ((skip + PAGE_SIZE) * 4),
-    // filtraba y devolvía `total: filtered.length`. Eso contaba solo dentro de
-    // la ventana traída, no del catálogo, así que el número de páginas salía
-    // corto y las últimas eran inalcanzables.
-    //
-    // Ahora: una query LIGERA (solo id + ratings) para saber qué juegos superan
-    // el umbral y cuántos son en total, y una segunda query con los datos
+    // Una query LIGERA (solo id + ratings) para saber qué juegos superan el
+    // umbral y cuántos son en total, y una segunda query con los datos
     // completos de únicamente los 20 de la página pedida.
     if (minRating > 0) {
       const all = await prisma.game.findMany({
@@ -149,14 +153,15 @@ const getFilteredGames = (
 
     return { items, total }
   },
-  ['filtered-games', sortBy, selectedGenres.slice().sort().join(','), minRating.toString(), String(page), String(PAGE_SIZE)],
+
+  ['filtered-games', sortBy, selectedGenres.slice().sort().join(','), minRating.toString(), String(page), String(PAGE_SIZE), today],
   { revalidate: 3600 }
 )()
 
-const getAllGamesForOptions = unstable_cache(
+const getAllGamesForOptions = (today: string) => unstable_cache(
   async () => {
     const games = await prisma.game.findMany({
-      where: { status: 'APPROVED' },
+      where: { status: 'APPROVED', ...releasedFilter(today) },
       select: { genre: true, platform: true, releaseDate: true },
     })
 
@@ -178,9 +183,9 @@ const getAllGamesForOptions = unstable_cache(
       years:     [...years].sort((a, b) => b - a),
     }
   },
-  ['game-filter-options'],
+  ['game-filter-options', today],
   { revalidate: 3600 }
-)
+)()
 
 export async function generateMetadata({
   searchParams,
@@ -192,7 +197,7 @@ export async function generateMetadata({
   const title = page === 1
     ? 'Catálogo de juegos | GameNook'
     : `Catálogo de juegos - página ${page} | GameNook`
-  const description = `Explora el catálogo de GameNook. Navega la página ${page} de nuestra biblioteca de juegos aprobados.`
+  const description = `Explora el catálogo de GameNook. Navega la página ${page} de nuestra biblioteca de juegos ya lanzados.`
   // Antes estaba hardcodeado como 'https://gamenook.es/games', sin www — y ese
   // host devuelve 307. Le estábamos declarando a Google una canónica que
   // redirige, en TODAS las páginas del catálogo.
@@ -232,10 +237,13 @@ export default async function GamesPage({
   const minRating = params.rating ? parseInt(params.rating as string) : 0
   const page = params.page ? parseInt(params.page as string) : 1
 
+  // Se calcula aquí, fuera de la caché, y se propaga a las dos consultas.
+  const today = getTodayKey()
+
   const session = await getServerSession(authOptions)
   const [games, options] = await Promise.all([
-    getFilteredGames(sortBy, selectedGenres, minRating, page),
-    getAllGamesForOptions(),
+    getFilteredGames(sortBy, selectedGenres, minRating, page, today),
+    getAllGamesForOptions(today),
   ])
 
   const gameItems = games.items

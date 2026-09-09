@@ -33,9 +33,13 @@ export const metadata: Metadata = {
 }
 
 
-const getUpcomingGames = unstable_cache(
+function getTodayKey(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+const getUpcomingGames = (today: string) => unstable_cache(
   async () => {
-    const now = new Date()
+    const now = new Date(`${today}T23:59:59.999Z`)
 
     const games = await prisma.game.findMany({
       where: {
@@ -73,9 +77,9 @@ const getUpcomingGames = unstable_cache(
       releaseDate: g.releaseDate?.toISOString() ?? null,
     }))
   },
-  ['upcoming-games'],
+  ['upcoming-games', today],
   { revalidate: 3600, tags: ['upcoming-games'] }
-)
+)()
 
 interface UpcomingGame {
   id:            string
@@ -209,8 +213,11 @@ function UpcomingGameCard({
 }
 
 export default async function UpcomingPage() {
+  // Se calcula aquí, fuera de la caché, y se propaga a la consulta.
+  const today = getTodayKey()
+
   const [games, session] = await Promise.all([
-    getUpcomingGames(),
+    getUpcomingGames(today),
     getServerSession(authOptions),
   ])
 

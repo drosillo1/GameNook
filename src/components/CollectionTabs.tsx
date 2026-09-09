@@ -134,7 +134,7 @@ function GameCard({
       <div className="relative aspect-[3/4] bg-gn-surface overflow-hidden flex-shrink-0">
         {game.imageUrl ? (
           <Image
-            src={game.imageUrl}
+             src={game.imageUrl.replace('/t_cover_big/', '/t_cover_big_2x/')}
             alt={game.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"

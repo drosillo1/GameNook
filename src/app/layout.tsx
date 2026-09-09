@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     template: '%s — GameNook',
   },
   description: 'Descubre, reseña y comparte tus videojuegos favoritos con la comunidad gamer.',
+  verification: {
+    google: 'dsmIqHxOHYIiZXCd7Od857CKLbtpenvCKGJswvQGAxA',
+  },
   openGraph: {
     title: 'GameNook — Reseñas de Videojuegos',
     description: 'Descubre, reseña y comparte tus videojuegos favoritos con la comunidad gamer.',
