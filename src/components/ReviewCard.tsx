@@ -11,6 +11,7 @@ import { toast } from '@/lib/toast'
 import { getRatingData, getRatingChipClass } from '@/lib/rating'
 import { toggleReviewLikeAction } from '@/actions/reviews'
 import UserAvatarDisplay from './UserAvatarDisplay'
+import type { ReviewUser } from '@/types/reviews'
 
 interface Review {
   id: string
@@ -20,14 +21,7 @@ interface Review {
   updatedAt: string
   likeCount: number
   likedByCurrentUser: boolean
-  user: {
-    id: string
-    name: string | null
-    username: string | null
-    displayName: string
-    image: string | null
-    avatar: string | null
-  }
+  user: ReviewUser
 }
 
 interface ReviewCardProps {
@@ -77,6 +71,7 @@ function ExpandableContent({ content }: { content: string }) {
 export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: ReviewCardProps) {
   const isOwn  = isOwnProp ?? (currentUserId !== undefined && currentUserId === review.user.id)
   const router = useRouter()
+  const isDeletedAuthor = review.user.isDeleted ?? review.user.id === null
 
   const [showMenu,     setShowMenu]     = useState(false)
   const [isEditing,    setIsEditing]    = useState(false)
@@ -246,12 +241,14 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
                 </div>
               </Link>
             ) : (
-              <UserAvatarDisplay
-                avatar={review.user.avatar}
-                image={review.user.image}
-                name={review.user.displayName}
-                size={36}
-              />
+              <div className={isDeletedAuthor ? 'flex-shrink-0 opacity-60' : 'flex-shrink-0'}>
+                <UserAvatarDisplay
+                  avatar={review.user.avatar}
+                  image={review.user.image}
+                  name={review.user.displayName}
+                  size={36}
+                />
+              </div>
             )}
 
             <div>
@@ -264,7 +261,9 @@ export default function ReviewCard({ review, currentUserId, isOwn: isOwnProp }: 
                     {review.user.displayName}
                   </Link>
                 ) : (
-                  review.user.displayName
+                  <span className={isDeletedAuthor ? 'italic text-gn-muted font-normal' : undefined}>
+                    {review.user.displayName}
+                  </span>
                 )}
                 {isOwn && <span className="text-xs text-gn-primary ml-2">(Tú)</span>}
               </h4>

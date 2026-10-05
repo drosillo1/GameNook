@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit'
+import { normalizeReviewUser } from '@/types/reviews'
 
 const CONTENT_MAX_LENGTH = 5000
 
@@ -27,6 +28,7 @@ export async function GET(
             id: true,
             name: true,
             username: true,
+            email: true,
             image: true,
             avatar: true,
           },
@@ -48,7 +50,7 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(review)
+    return NextResponse.json({ ...review, user: normalizeReviewUser(review.user) })
   } catch (error) {
     console.error('Error fetching review:', error)
     return NextResponse.json(
@@ -149,6 +151,7 @@ export async function PUT(
             id: true,
             name: true,
             username: true,
+            email: true,
             image: true,
             avatar: true,
           },
@@ -163,7 +166,7 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json(updatedReview)
+    return NextResponse.json({ ...updatedReview, user: normalizeReviewUser(updatedReview.user) })
   } catch (error) {
     console.error('Error updating review:', error)
     return NextResponse.json(

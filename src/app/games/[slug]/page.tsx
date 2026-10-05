@@ -16,6 +16,7 @@ import { translateTheme } from '@/lib/themes'
 import { translateGenre } from '@/lib/genres'
 import FollowButton from '@/components/FollowButton'
 import { getCollectionStatuses } from '@/lib/collectionStatus'
+import { normalizeReviewUser } from '@/types/reviews'
 
 interface GameDetailPageProps {
   params: Promise<{ slug: string }>
@@ -114,14 +115,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     userId: r.userId,
     likeCount: r.likeCount,
     likedByCurrentUser: currentUserId ? r.likes.some(l => l.userId === currentUserId) : false,
-    user: {
-      id:          r.user.id,
-      name:        r.user.name,
-      username:    r.user.username,
-      displayName: r.user.name ?? r.user.email?.split('@')[0] ?? 'Usuario',
-      image:       r.user.image,
-      avatar:      r.user.avatar,
-    },
+    user: normalizeReviewUser(r.user),
   }))
 
   // ── Reseñas destacadas (top por likes) ──

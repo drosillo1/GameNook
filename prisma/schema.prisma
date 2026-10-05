@@ -114,10 +114,10 @@ model Review {
   likeCount Int          @default(0)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-  userId    String
+  userId    String?
   gameId    String
   game      Game         @relation(fields: [gameId], references: [id])
-  user      User         @relation(fields: [userId], references: [id])
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   likes     ReviewLike[]
 
   @@unique([userId, gameId])

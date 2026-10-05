@@ -10,6 +10,7 @@ import { ChevronLeft } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { FAVORITE_PLATFORMS, MAX_FAVORITE_PLATFORMS } from '@/lib/platforms'
 import { AVATARS, getAvatarUrl } from '@/lib/avatars'
+import DeleteAccountSection from '@/components/DeleteAccountSection'
 
 const BIO_MAX_LENGTH = 160
 const LOCATION_MAX_LENGTH = 50
@@ -327,6 +328,8 @@ export default function EditProfilePage() {
             </button>
           </form>
         </div>
+
+        <DeleteAccountSection username={session?.user?.username} />
       </div>
     </div>
   )

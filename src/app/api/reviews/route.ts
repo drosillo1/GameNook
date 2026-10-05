@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rateLimit, rateLimitResponse, parsePagination, RATE_LIMITS } from '@/lib/rateLimit'
+import { normalizeReviewUser } from '@/types/reviews'
 
 // Tope para reseñas
 const CONTENT_MAX_LENGTH = 5000
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
               id: true,
               name: true,
               username: true,
+              email: true,
               image: true,
               avatar: true,
             },
@@ -139,7 +141,10 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
-    return NextResponse.json(review, { status: 201 })
+    return NextResponse.json(
+      { ...review, user: normalizeReviewUser(review.user) },
+      { status: 201 }
+    )
   } catch (error) {
     console.error('Error creating review:', error)
     return NextResponse.json(
@@ -174,6 +179,7 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             username: true,
+            email: true,
             image: true,
             avatar: true,
           },
@@ -193,7 +199,9 @@ export async function GET(request: NextRequest) {
       skip: offset,
     })
 
-    return NextResponse.json(reviews)
+    return NextResponse.json(
+      reviews.map(r => ({ ...r, user: normalizeReviewUser(r.user) }))
+    )
   } catch (error) {
     console.error('Error fetching reviews:', error)
     return NextResponse.json(

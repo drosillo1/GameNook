@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { HeartIcon } from 'lucide-react'
 import ReviewCard from './ReviewCard'
+import type { ReviewUser } from '@/types/reviews'
 
 const PAGE_SIZE = 10
 
@@ -15,14 +16,7 @@ interface Review {
   updatedAt: string
   likeCount: number
   likedByCurrentUser: boolean
-  user: {
-    id: string
-    name: string | null
-    username: string | null
-    displayName: string
-    image: string | null
-    avatar: string | null
-  }
+  user: ReviewUser
 }
 
 interface Props {
