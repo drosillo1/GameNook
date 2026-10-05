@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { getIGDBGameDetails, mapIGDBToDBFields } from '@/lib/igdb'
+import { translateToSpanish } from '@/lib/translate'
 import { rateLimit, rateLimitResponse, parsePagination, RATE_LIMITS } from '@/lib/rateLimit'
 
 const DESCRIPTION_MAX_LENGTH = 5000
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { igdbId, description } = body
+    const { igdbId } = body
 
 
     if (typeof igdbId !== 'number' || !Number.isInteger(igdbId) || igdbId <= 0) {
@@ -165,12 +166,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let finalDescription: string | null = null
-    if (typeof description === 'string' && description.trim()) {
-      finalDescription = description.trim().slice(0, DESCRIPTION_MAX_LENGTH)
-    } else if (igdbDetails.summary?.trim()) {
-      finalDescription = igdbDetails.summary.trim().slice(0, DESCRIPTION_MAX_LENGTH)
-    }
+
+    const rawSummary = igdbDetails.summary?.trim()
+    const finalDescription = rawSummary
+      ? (await translateToSpanish(rawSummary)).slice(0, DESCRIPTION_MAX_LENGTH)
+      : null
 
 
     const imageUrl    = igdbDetails.cover?.url ?? null

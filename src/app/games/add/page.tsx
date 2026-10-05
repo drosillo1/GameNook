@@ -218,14 +218,10 @@ export default function AddGamePage() {
     setError('')
 
     try {
-      // Solo se envían igdbId y description: desde la auditoría, el servidor
-      // deriva título, portada, fecha, géneros y plataformas de IGDB en vez de
-      // confiar en lo que mande el cliente. El resto de formData es local,
-      // para la vista previa.
       const res = await fetch('/api/games', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ igdbId, description }),
+        body: JSON.stringify({ igdbId }),
       })
 
       if (!res.ok) {
