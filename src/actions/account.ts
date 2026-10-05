@@ -1,10 +1,10 @@
-// src/app/actions/deleteAccount.ts
+// src/actions/account.ts
 'use server'
 
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
+import { revalidateHome } from '@/lib/cacheTags'
 
 
 export async function deleteAccount(): Promise<
@@ -38,7 +38,7 @@ export async function deleteAccount(): Promise<
       await tx.user.delete({ where: { id: userId } })
     })
 
-    revalidatePath('/')
+    revalidateHome()
     return { ok: true }
 
   } catch (error) {

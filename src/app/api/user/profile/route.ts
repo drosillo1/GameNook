@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isValidFavoritePlatform, MAX_FAVORITE_PLATFORMS } from '@/lib/platforms'
 import { isValidAvatar } from '@/lib/avatars'
+import { revalidateHome } from '@/lib/cacheTags'
 
 const BIO_MAX_LENGTH = 160
 const LOCATION_MAX_LENGTH = 50
@@ -116,6 +117,10 @@ export async function PATCH(request: Request) {
     data,
     select: { name: true, bio: true, location: true, favoritePlatforms: true, avatar: true },
   })
+
+  if (data.name !== undefined || data.avatar !== undefined) {
+    revalidateHome()
+  }
 
   return NextResponse.json(updated)
 }

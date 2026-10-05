@@ -1,47 +1,14 @@
+// src/app/page.tsx
 import Link from 'next/link'
-import { StarIcon, BookOpenIcon, UsersIcon } from 'lucide-react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { CACHE_TAGS } from '@/lib/cacheTags'
 import { ScrollingText } from '@/components/ScrollingText'
 import { Counter } from '@/components/Counter'
-import dynamic from 'next/dynamic'
 import { HeroCharacters, RecentReviews } from '@/components/DynamicIslands'
 
-export const revalidate = 3600 
-
-const features = [
-  {
-    icon: <StarIcon className="w-5 h-5" />,
-    title: 'Sistema gaming',
-    desc: 'Puntúa del 1 al 10 con iconos temáticos: desde Jugable hasta Obra Maestra.',
-    accent: 'border-t-gn-primary',
-    iconBg: 'bg-gn-primary/10 text-gn-primary',
-  },
-  {
-    icon: <BookOpenIcon className="w-5 h-5" />,
-    title: 'Tu biblioteca',
-    desc: 'Lleva el registro de todo lo que has jugado, estás jugando o tienes pendiente.',
-    accent: 'border-t-gn-accent',
-    iconBg: 'bg-gn-accent/10 text-gn-accent',
-  },
-  {
-    icon: <UsersIcon className="w-5 h-5" />,
-    title: 'Comunidad',
-    desc: 'Lee opiniones reales de otros gamers y descubre tu próxima obsesión.',
-    accent: 'border-t-gn-secondary',
-    iconBg: 'bg-gn-secondary/10 text-gn-secondary',
-  },
-]
-
-const ratings = [
-  { range: '1-2', icon: '🎮', label: 'Jugable', color: 'text-gray-400   border-gray-500/30   bg-gray-500/10' },
-  { range: '3-4', icon: '❤️', label: 'Entretenido', color: 'text-blue-400   border-blue-500/30   bg-blue-500/10' },
-  { range: '5-6', icon: '⚡', label: 'Recomendado', color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' },
-  { range: '7-8', icon: '🏆', label: 'Imprescindible', color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
-  { range: '9-10', icon: '👑', label: 'Obra Maestra', color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' },
-]
 
 const getStats = unstable_cache(
   async () => {
@@ -53,19 +20,20 @@ const getStats = unstable_cache(
     return { games, reviews, gamers }
   },
   ['home-stats'],
-  { revalidate: 300 }
+  { revalidate: 3600, tags: [CACHE_TAGS.HOME_STATS] }
 )
 
 const getRecentReviews = unstable_cache(
   async () => {
-    return prisma.review.findMany({
+    const reviews = await prisma.review.findMany({
       where: {
         content: { not: null },
-        game: { status: 'APPROVED' },
+        userId:  { not: null },
+        game:    { status: 'APPROVED' },
       },
       select: {
-        id: true,
-        rating: true,
+        id:      true,
+        rating:  true,
         content: true,
         game: { select: { title: true, slug: true, imageUrl: true } },
         user: { select: { name: true, image: true, avatar: true } },
@@ -73,9 +41,12 @@ const getRecentReviews = unstable_cache(
       orderBy: { createdAt: 'desc' },
       take: 12,
     })
+
+
+    return reviews.flatMap(r => (r.user ? [{ ...r, user: r.user }] : []))
   },
   ['recent-reviews'],
-  { revalidate: 3600 }
+  { revalidate: 3600, tags: [CACHE_TAGS.RECENT_REVIEWS] }
 )
 
 export default async function Home() {
@@ -150,9 +121,9 @@ export default async function Home() {
       <div className="bg-gn-surface border-y border-white/[0.06]">
         <div className="max-w-2xl mx-auto px-6 py-6 flex justify-center gap-16">
           {[
-            { end: stats.games, label: 'Juegos' },
+            { end: stats.games,   label: 'Juegos'  },
             { end: stats.reviews, label: 'Reseñas' },
-            { end: stats.gamers, label: 'Gamers' },
+            { end: stats.gamers,  label: 'Gamers'  },
           ].map((s) => (
             <div key={s.label} className="text-center">
               <div
@@ -181,7 +152,7 @@ export default async function Home() {
               Últimas reseñas
             </h2>
           </div>
-          <RecentReviews reviews={recentReviews as any} />
+          <RecentReviews reviews={recentReviews} />
         </section>
       )}
 

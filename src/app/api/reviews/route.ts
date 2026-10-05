@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rateLimit, rateLimitResponse, parsePagination, RATE_LIMITS } from '@/lib/rateLimit'
 import { normalizeReviewUser } from '@/types/reviews'
+import { revalidateHome } from '@/lib/cacheTags'
 
 // Tope para reseñas
 const CONTENT_MAX_LENGTH = 5000
@@ -140,6 +141,9 @@ export async function POST(request: NextRequest) {
       }
       throw error
     }
+
+    // Contadores (reseñas, gamers) y carrusel de la home
+    revalidateHome()
 
     return NextResponse.json(
       { ...review, user: normalizeReviewUser(review.user) },

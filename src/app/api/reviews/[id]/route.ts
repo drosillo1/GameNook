@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rateLimit'
 import { normalizeReviewUser } from '@/types/reviews'
+import { revalidateHome } from '@/lib/cacheTags'
 
 const CONTENT_MAX_LENGTH = 5000
 
@@ -166,6 +167,8 @@ export async function PUT(
       },
     })
 
+    revalidateHome()
+
     return NextResponse.json({ ...updatedReview, user: normalizeReviewUser(updatedReview.user) })
   } catch (error) {
     console.error('Error updating review:', error)
@@ -216,6 +219,8 @@ export async function DELETE(
 
     // Eliminar la reseña. Los ReviewLike asociados caen por onDelete: Cascade.
     await prisma.review.delete({ where: { id } })
+
+    revalidateHome()
 
     return NextResponse.json({ message: 'Reseña eliminada correctamente' })
   } catch (error) {
