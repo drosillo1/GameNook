@@ -4,10 +4,11 @@
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
-import { GamepadIcon, ChevronDownIcon, ShieldIcon, MenuIcon, XIcon } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { ChevronDownIcon, ShieldIcon, MenuIcon, XIcon, SearchIcon } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import UserAvatarDisplay from './UserAvatarDisplay'
+import GameSearchDropdown from './GameSearchDropdown'
 
 export default function Navigation() {
   const { data: session } = useSession()
@@ -15,6 +16,7 @@ export default function Navigation() {
   const router            = useRouter()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileOpen,   setMobileOpen]   = useState(false)
+  const [searchOpen,   setSearchOpen]   = useState(false)
 
   // Redirigir a onboarding si el usuario no tiene nombre o username
   useEffect(() => {
@@ -27,6 +29,37 @@ export default function Navigation() {
       router.push('/onboarding')
     }
   }, [session, pathname, router])
+
+
+  useEffect(() => {
+    setSearchOpen(false)
+  }, [pathname])
+
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSearchOpen(false)
+        return
+      }
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return
+
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+      ) {
+        return
+      }
+
+      e.preventDefault()
+      setDropdownOpen(false)
+      setMobileOpen(false)
+      setSearchOpen(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'MODERATOR'
 
@@ -47,13 +80,23 @@ export default function Navigation() {
 
   const openDropdown = () => {
     setMobileOpen(false)
+    setSearchOpen(false)
     setDropdownOpen(prev => !prev)
   }
 
   const openMobileMenu = () => {
     setDropdownOpen(false)
+    setSearchOpen(false)
     setMobileOpen(prev => !prev)
   }
+
+  const toggleSearch = () => {
+    setDropdownOpen(false)
+    setMobileOpen(false)
+    setSearchOpen(prev => !prev)
+  }
+
+  const closeSearch = useCallback(() => setSearchOpen(false), [])
 
   return (
     <header className="sticky top-0 z-50 bg-gn-bg/85 backdrop-blur-xl border-b border-white/[0.06]">
@@ -62,7 +105,7 @@ export default function Navigation() {
         {/* ── Logo ── */}
         <Link
           href="/"
-          className="flex items-center gap-3 min-w-0 flex-shrink group"
+          className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink group"
           onClick={() => setMobileOpen(false)}
         >
 
@@ -109,8 +152,29 @@ export default function Navigation() {
           )}
         </nav>
 
-        {/* ── Auth + hamburguesa ── */}
-        <div className="flex items-center gap-2">
+        {/* ── Búsqueda + auth + hamburguesa ── */}
+        {/* gap-1.5 en móvil: a 360px sin sesión (el caso más estrecho) cada píxel cuenta */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+
+          {/* ── Buscador global ── */}
+          <button
+            type="button"
+            onClick={toggleSearch}
+            aria-label={searchOpen ? 'Cerrar búsqueda' : 'Buscar juegos'}
+            aria-expanded={searchOpen}
+            title="Buscar (/)"
+            className={`flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg
+                       border transition-colors ${
+                         searchOpen
+                           ? 'bg-gn-primary border-gn-primary text-white shadow-gn-red'
+                           : 'border-white/[0.08] text-gn-muted hover:text-gn-text hover:border-white/20'
+                       }`}
+          >
+            {searchOpen
+              ? <XIcon      className="w-4 h-4" strokeWidth={2.5} />
+              : <SearchIcon className="w-4 h-4" />
+            }
+          </button>
 
           {session ? (
             <div className="relative">
@@ -195,7 +259,8 @@ export default function Navigation() {
              uppercase tracking-wider px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg shadow-gn-red
              transition-all duration-200 hover:-translate-y-0.5 whitespace-nowrap"
               >
-                ▶ Entrar
+                
+                <span className="hidden sm:inline" aria-hidden="true">▶ </span>Entrar
               </Link>
           )}
 
@@ -217,6 +282,26 @@ export default function Navigation() {
           </button>
         </div>
       </div>
+
+      {/* ── Panel de búsqueda ── */}
+      {searchOpen && (
+        <>
+          <div
+            className="fixed top-[60px] inset-x-0 bottom-0 z-30 bg-black/40 backdrop-blur-sm"
+            onClick={closeSearch}
+          />
+          <div className="absolute top-[60px] left-0 right-0 z-40
+                          bg-gn-bg border-b border-white/[0.06] shadow-2xl">
+            <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4">
+              <GameSearchDropdown
+                className="w-full"
+                autoFocus
+                onNavigate={closeSearch}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Menú móvil ── */}
       {mobileOpen && (
