@@ -92,17 +92,36 @@ export default function AddGamePage() {
     router.replace(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`)
   }, [status, searchParams, router])
 
+
   useEffect(() => {
+    if (status !== 'authenticated') return
+
     const igdbIdParam = searchParams.get('igdbId')
     if (!igdbIdParam || isNaN(parseInt(igdbIdParam))) return
 
     const id = parseInt(igdbIdParam)
+    let cancelled = false
     setIsTranslating(true)
 
-    fetch(`/api/igdb/prefill/${id}`)
-      .then(r => r.json())
-      .then(async (game) => {
-        if (game.error) return
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/igdb/prefill/${id}`)
+        if (!res.ok) return
+        const game = await res.json()
+        if (cancelled || game.error) return
+
+        // Mismo control de duplicados que handleIGDBSelect
+        try {
+          const checkRes  = await fetch(`/api/games/by-igdb-ids?ids=${game.id}`)
+          const checkData = await checkRes.json()
+          if (cancelled) return
+          if (Array.isArray(checkData) && checkData.length > 0) {
+            setDuplicateGame({ title: game.name, slug: checkData[0].slug })
+            return
+          }
+        } catch {
+          // Si falla la comprobación, seguimos; el POST rechaza duplicados igualmente.
+        }
 
         const releaseDate = game.first_release_date
           ? new Date(game.first_release_date * 1000).toISOString().split('T')[0]
@@ -113,6 +132,7 @@ export default function AddGamePage() {
         const translated = game.summary
           ? await translateToSpanishClient(game.summary)
           : ''
+        if (cancelled) return
 
         setIgdbId(game.id)
         setIgdbSelected(true)
@@ -124,10 +144,15 @@ export default function AddGamePage() {
           genre: game.genres?.map((g: any) => g.name) ?? [],
           platform: game.platforms?.map((p: any) => p.name) ?? [],
         })
-      })
-      .catch(console.error)
-      .finally(() => setIsTranslating(false))
-  }, [searchParams])
+      } catch (err) {
+        console.error(err)
+      } finally {
+        if (!cancelled) setIsTranslating(false)
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [status, searchParams])
 
   if (status === 'loading') {
     return (
