@@ -3,6 +3,8 @@ import 'server-only'
 
 const MYMEMORY_ENDPOINT = 'https://api.mymemory.translated.net/get'
 
+//Aviso posible limite
+const MYMEMORY_WARNING_PREFIX = 'MYMEMORY WARNING'
 
 export async function translateToSpanish(text: string): Promise<string> {
   if (!text?.trim()) return text
@@ -28,13 +30,22 @@ export async function translateToSpanish(text: string): Promise<string> {
 
     const data = await res.json()
 
-
     if (data.responseStatus !== 200) {
       console.error('[translate] MyMemory translation failed:', data.responseMessage)
       return text
     }
 
-    return data.responseData?.translatedText ?? text
+    const translated: unknown = data.responseData?.translatedText
+    if (typeof translated !== 'string' || !translated.trim()) {
+      return text
+    }
+
+    if (translated.trim().toUpperCase().startsWith(MYMEMORY_WARNING_PREFIX)) {
+      console.error('[translate] MyMemory devolvió un aviso en lugar de traducción:', translated)
+      return text
+    }
+
+    return translated
 
   } catch (error) {
     console.error('[translate] Error inesperado:', error)

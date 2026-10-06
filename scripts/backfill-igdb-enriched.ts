@@ -1,8 +1,9 @@
 // scripts/backfill-igdb-enriched.ts
-// Uso: npx tsx scripts/backfill-igdb-enriched.ts
+// Uso:
+//   npx tsx --env-file=.env scripts/backfill-igdb-enriched.ts                 → todo el catálogo con igdbId
+//   npx tsx --env-file=.env scripts/backfill-igdb-enriched.ts slug1 slug2     → solo esos juegos
 //
-// Recorre todos los juegos con igdbId, consulta los datos enriquecidos
-// de IGDB y actualiza los campos nuevos en la BD.
+// Consulta los datos enriquecidos de IGDB (y la nota) y actualiza los campos en la BD.
 // Seguro de re-ejecutar: sobreescribe los campos cada vez.
 
 import { PrismaClient } from '@prisma/client'
@@ -83,7 +84,9 @@ async function fetchEnrichedData(igdbId: number) {
              dlcs,
              expansions,
              similar_games,
-             status;
+             status,
+             rating,
+             rating_count;
       where id = ${igdbId};
       limit 1;
     `
@@ -160,6 +163,10 @@ async function fetchEnrichedData(igdbId: number) {
       typeof sg === 'number' ? sg : sg.id
     ),
     releaseStatus:      game.status ?? null,
+    // La nota de IGDB alimenta el popularityScore del cron: un juego al que se le
+    // acaba de asignar igdbId la necesita para dejar de puntuar como "sin datos".
+    igdbRating:         game.rating       ?? null,
+    igdbRatingCount:    game.rating_count ?? null,
   }
 }
 
@@ -169,11 +176,26 @@ function sleep(ms: number) {
 }
 
 async function main() {
+  // Slugs opcionales: si se pasan, solo se procesan esos juegos (evita recorrer
+  // todo el catálogo, ~400 llamadas a IGDB, para arreglar unos pocos).
+  const slugs = process.argv.slice(2).filter(a => !a.startsWith('--'))
+
   const games = await prisma.game.findMany({
-    where: { igdbId: { not: null } },
-    select: { id: true, title: true, igdbId: true },
+    where: {
+      igdbId: { not: null },
+      ...(slugs.length > 0 ? { slug: { in: slugs } } : {}),
+    },
+    select: { id: true, title: true, slug: true, igdbId: true },
     orderBy: { title: 'asc' },
   })
+
+  if (slugs.length > 0) {
+    const found   = new Set(games.map(g => g.slug))
+    const missing = slugs.filter(s => !found.has(s))
+    if (missing.length > 0) {
+      console.log(`⚠  No encontrados o sin igdbId: ${missing.join(', ')}\n`)
+    }
+  }
 
   console.log(`Encontrados ${games.length} juegos con igdbId\n`)
 
@@ -202,6 +224,7 @@ async function main() {
         data.gameEngine                   && data.gameEngine,
         data.dlcIgdbIds.length > 0        && `${data.dlcIgdbIds.length} DLCs`,
         data.similarGameIgdbIds.length > 0 && `${data.similarGameIgdbIds.length} similares`,
+        data.igdbRating !== null          && `nota ${Math.round(data.igdbRating)}`,
       ].filter(Boolean).join(', ')
 
       console.log(`✅ ${game.title}${extras ? ` — ${extras}` : ''}`)
