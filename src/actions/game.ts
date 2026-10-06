@@ -1,3 +1,4 @@
+// src/actions/game.ts
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
@@ -5,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { revalidateHome } from '@/lib/cacheTags'
 
 // Esquema de validación para actualizar un juego
 const GameUpdateSchema = z.object({
@@ -48,6 +50,7 @@ export async function updateGameAction(gameId: string, slug: string, formData: u
     revalidatePath('/games')
     revalidatePath('/upcoming')
     revalidatePath('/admin')
+    revalidateHome()
   } catch (err) {
     console.error('revalidate failed', err)
   }
@@ -72,6 +75,7 @@ export async function createGameAction(formData: unknown) {
     revalidateTag(`game-${created.slug}`)
     revalidatePath('/games')
     revalidatePath('/upcoming')
+    revalidateHome()
   } catch (err) {
     console.error('revalidate failed', err)
   }

@@ -7,6 +7,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { getIGDBGameDetails, mapIGDBToDBFields } from '@/lib/igdb'
 import { translateToSpanish } from '@/lib/translate'
 import { rateLimit, rateLimitResponse, parsePagination, RATE_LIMITS } from '@/lib/rateLimit'
+import { revalidateHome } from '@/lib/cacheTags'
 
 const DESCRIPTION_MAX_LENGTH = 5000
 
@@ -95,17 +96,19 @@ export async function POST(request: NextRequest) {
 
     const { id: userId } = session.user
 
-    // Rate limit 
-    const rl = await rateLimit(
-      `games:create:${userId}`,
-      RATE_LIMITS.GAME_CREATE.limit,
-      RATE_LIMITS.GAME_CREATE.windowSeconds
-    )
-    if (!rl.ok) {
-      return rateLimitResponse(
-        rl,
-        `Has alcanzado el límite de ${RATE_LIMITS.GAME_CREATE.limit} juegos añadidos por día. Inténtalo mañana.`
+    // Rate limit — solo para usuarios normales.
+    if (!canModerate(session.user.role)) {
+      const rl = await rateLimit(
+        `games:create:${userId}`,
+        RATE_LIMITS.GAME_CREATE.limit,
+        RATE_LIMITS.GAME_CREATE.windowSeconds
       )
+      if (!rl.ok) {
+        return rateLimitResponse(
+          rl,
+          `Has alcanzado el límite de ${RATE_LIMITS.GAME_CREATE.limit} juegos añadidos por día. Inténtalo mañana.`
+        )
+      }
     }
 
     const body = await request.json()
@@ -221,6 +224,7 @@ export async function POST(request: NextRequest) {
     revalidatePath('/games')
     revalidatePath('/upcoming')
     revalidateTag('upcoming-games')
+    revalidateHome()   
 
     return NextResponse.json({ ...game, averageRating: null }, { status: 201 })
   } catch (error) {

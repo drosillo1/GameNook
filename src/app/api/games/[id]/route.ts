@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidateHome } from '@/lib/cacheTags'
 
 const canModerate = (role: string) => role === 'ADMIN' || role === 'MODERATOR'
 
@@ -85,6 +86,7 @@ export async function PATCH(
     revalidatePath('/admin')
     revalidateTag('upcoming-games')
     revalidateTag(`game-${game.slug}`)
+    revalidateHome()
 
     return NextResponse.json(game)
   } catch (error) {
@@ -138,6 +140,7 @@ export async function DELETE(
     revalidatePath('/admin')
     revalidateTag('upcoming-games')
     revalidateTag(`game-${game.slug}`)
+    revalidateHome()
 
     return NextResponse.json({ ok: true })
   } catch (error) {
