@@ -15,7 +15,8 @@ const getStats = unstable_cache(
     const [games, reviews, gamers] = await Promise.all([
       prisma.game.count({ where: { status: 'APPROVED' } }),
       prisma.review.count(),
-      prisma.user.count({ where: { reviews: { some: {} } } }),
+      // "Gamers" = usuarios registrados (incluye cuentas sin actividad).
+      prisma.user.count(),
     ])
     return { games, reviews, gamers }
   },
